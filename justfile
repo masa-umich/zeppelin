@@ -2,6 +2,11 @@
 # Mostly exists to not have to activate the python venv by wrapping `uv run`
 set ignore-comments := true
 
+# just selects the platform's shell and resolves its executable automatically.
+# Windows uses built-in Windows PowerShell; Git Bash is not required.
+set shell := ["sh", "-cu"]
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]
+
 [private] # private so it doesn't show itself in the list
 default:
     @just --list
@@ -11,15 +16,29 @@ west *ARGS:
     uv run west {{ARGS}}
 
 # clang-format check of all source files (dryrun)
+[unix]
 check:
     git add .
     git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" | xargs uv run clang-format --dry-run --Werror -style=file || true
     # use clang-format from uv venv and finds files using git which should be guarenteed to exist
 
 # clang-format all source files
+[unix]
 format:
     git add .
     git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" | xargs uv run clang-format -i -style=file || true
+
+# Windows equivalents: no xargs dependency or PowerShell 7-only || operator.
+# As above, clang-format failures are reported but do not fail the recipe.
+[windows]
+check:
+    git add .
+    git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" | ForEach-Object { uv run clang-format --dry-run --Werror -style=file -- $_ }; exit 0
+
+[windows]
+format:
+    git add .
+    git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" | ForEach-Object { uv run clang-format -i -style=file -- $_ }; exit 0
 
 # First time setup
 setup:
