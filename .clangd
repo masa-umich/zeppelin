@@ -1,0 +1,12 @@
+CompileFlags:
+  Add:
+    - -Wall
+  Remove:
+    - -mlongcalls
+    - -fno-printf-return-value
+    - -fno-reorder-functions
+    - -fstrict-volatile-bitfields
+    - -fno-freestanding
+Diagnostics:
+  Suppress:
+    - attribute_section_invalid_for_target

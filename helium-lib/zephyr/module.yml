@@ -1,0 +1,3 @@
+name: helium
+build:
+  cmake: .

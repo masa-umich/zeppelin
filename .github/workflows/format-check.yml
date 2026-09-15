@@ -1,0 +1,23 @@
+name: format-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install clang-format
+        run: pip install clang-format
+
+      # Mirrors the `just format` recipe: discover files via git and run
+      # clang-format with the repo's .clang-format style file. Uses --dry-run
+      # --Werror so unformatted files fail the check instead of being rewritten.
+      - name: Check formatting
+        run: |
+          git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" \
+            | xargs --no-run-if-empty clang-format --dry-run --Werror -style=file

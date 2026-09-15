@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test build akron-app
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-14, windows-2025]
+    runs-on: ${{ matrix.os }}
+    # Pass authentication tokens to all steps in the job - this increases the request rate limit
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          path: zeppelin
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.12
+
+      - name: Initialize Zeppelin Workspace
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: zeppelin
+          toolchains: arm-zephyr-eabi:riscv64-zephyr-elf:xtensa-espressif_esp32_zephyr-elf
+          ccache-cache-key: ${{ matrix.os }}
+
+      - name: Setup Zeppelin
+        working-directory: zeppelin
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" != "Windows" ]; then
+            west sdk install
+          fi
+          west zephyr-export
+          west blobs fetch hal_espressif
+
+      - name: Build akron-app
+        working-directory: zeppelin
+        shell: bash
+        env:
+          ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+        run: |
+          west build akron-app

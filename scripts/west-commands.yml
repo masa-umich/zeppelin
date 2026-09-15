@@ -1,0 +1,12 @@
+# Zeppelin project west extension commands.
+#
+# This provides a `packages-uv` command based on the upstream Zephyr `packages`
+# command, adding `uv` support. It uses a distinct name (rather than shadowing
+# Zephyr's `packages`) to avoid the "already defined as extension command"
+# warning that west emits for duplicate command names.
+west-commands:
+  - file: scripts/west_commands/packages_uv.py
+    commands:
+      - name: packages-uv
+        class: Packages
+        help: manage packages for Zephyr (with uv support)
