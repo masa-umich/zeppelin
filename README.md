@@ -1,16 +1,16 @@
 # Zeppelin
 
-MASA's board firmware written in Zephyr
+MASA's board firmware made with Zephyr
 
 This repo is setup as a T2 "star topology" meaning the apps are in the same repository as the manifest file. This means you should not clone this repo directly; instead, you should use `west` to clone it into a "west workspace" directory.
 
 ## Setup
-1. Install System Package Dependencies
+1. Install System Package Dependencies (OS specific instructions linked below)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - [Zephyr System Package Dependencies](https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-dependencies)
 2. Clone this repo
 ```bash
-uvx west init -m https://github.com/jhammerberg/zeppelin.git --mr main zeppelin-workspace
+uvx west init -m https://github.com/masa-umich/zeppelin.git --mr main zeppelin-workspace
 cd zeppelin-workspace/zeppelin
 ```
 3. Install the [just](https://just.systems/man/en/) command runner and run the setup command
