@@ -1,0 +1,8 @@
+{
+    "terminal.integrated.stickyScroll.enabled": false,
+    "git.ignoredRepositories": [
+        "${workspaceFolder}/zephyr",
+        "${workspaceFolder}/modules",
+        "${workspaceFolder}/tools"
+    ]
+}
