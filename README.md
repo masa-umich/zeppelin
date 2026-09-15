@@ -25,7 +25,12 @@ just setup
 just build akron-app
 ```
 > [!NOTE]
-> You will need to build at least once before your editor will pick up on the libraries and intellisense.
+> You will need to build at least once before your editor will pick up on the libraries
+> and intellisense.
+
+This repository can also be used with the VSCode extension *Workbench for Zephyr*. After
+following the previous steps, open the ***workspace root***
+directory (the directory that *zeppelin* resides in).
 
 ## Development
 
