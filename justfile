@@ -65,19 +65,19 @@ flash:
 default_baud := "115200"
 
 # Open a serial console (default baud 115200)
-console baud=default_baud:
-    @echo "{{BLUE}}Starting serial console with baud rate: {{GREEN}}{{baud}}{{NORMAL}}"
-    uv run west espressif monitor
-    # TODO: make into generic serial monitor with something like minicom
+#console baud=default_baud:
+#    @echo "{{BLUE}}Starting serial console with baud rate: {{GREEN}}{{baud}}{{NORMAL}}"
+#    uv run west espressif monitor
+#    # TODO: make into generic serial monitor with something like minicom
 
 # Run (and build if needed) the native_sim build
-[unix]
-run-sim: (build "akron-app" "true")
-    @echo "{{BLUE}}Running native_sim...{{NORMAL}}"
-    ./build/zephyr/zephyr.exe
+#[unix]
+#run-sim: (build "akron-app" "true")
+#    @echo "{{BLUE}}Running native_sim...{{NORMAL}}"
+#    ./build/zephyr/zephyr.exe
 
 # Build a target (pass --sim to build for native_sim)
 [arg("sim", long, value="true")]
 build target sim="false":
     @echo "{{BLUE}}Building{{NORMAL}} {{target}}..."
-    uv run west build {{target}} -p auto -b {{ if sim == "true" { "native_sim" } else { "esp32_devkitc/esp32/procpu" } }}
+    uv run west build {{target}} --pristine never --build-dir ./{{target}}/build/primary
