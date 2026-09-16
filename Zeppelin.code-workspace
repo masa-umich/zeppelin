@@ -1,0 +1,35 @@
+{
+    "folders": [
+        {
+            "name": "MASA Zephyr Firmware",
+            "path": ".."
+        }
+    ],
+    "settings": {
+		"terminal.integrated.stickyScroll.enabled": false,
+		"cmake.ignoreCMakeListsMissing": true,
+		"cmake.configureOnOpen": false,
+		"cmake.enableAutomaticKitScan": false,
+		"cmake.sourceDirectory": "${workspaceFolder}/nonexistent",
+        "git.ignoredRepositories": [
+            "${workspaceFolder}/zephyr",
+            "${workspaceFolder}/modules",
+            "${workspaceFolder}/tools"
+        ],
+        "zephyr-workbench.westWorkspace.applications": [
+            {
+                "build.configurations": [
+                    {
+                        "name": "primary",
+                        "board": "esp32c3_devkitm",
+                        "active": "true"
+                    }
+                ],
+                "toolchain": "zephyr",
+                "sdk": "global",
+                "intellisense.provider": "cpptools",
+                "path": "${workspaceFolder}/zeppelin/akron-app"
+            }
+        ],
+	}
+}

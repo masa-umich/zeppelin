@@ -29,8 +29,8 @@ just build akron-app
 > and intellisense.
 
 This repository can also be used with the VSCode extension *Workbench for Zephyr*. After
-following the previous steps, open the ***workspace root***
-directory (the directory that *zeppelin* resides in).
+following the previous steps, open the `Zeppelin.code_workspace`
+file to open the configured workspace.
 
 ## Development
 

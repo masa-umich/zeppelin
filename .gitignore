@@ -3,3 +3,4 @@
 **/.cache/
 **/__pycache__/
 __cmake_systeminformation
+.DS_Store
