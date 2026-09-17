@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" != "Windows" ]; then
-            west sdk install
+            west sdk install --personal-access-token "$GITHUB_TOKEN"
           fi
           west zephyr-export
           west blobs fetch hal_espressif

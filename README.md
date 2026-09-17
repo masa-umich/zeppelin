@@ -28,9 +28,7 @@ just build akron-app
 > You will need to build at least once before your editor will pick up on the libraries
 > and intellisense.
 
-This repository can also be used with the VSCode extension *Workbench for Zephyr*. After
-following the previous steps, open the `Zeppelin.code_workspace`
-file to open the configured workspace.
+This repository can also be used with the VSCode extension [*Workbench for Zephyr*](https://marketplace.visualstudio.com/items?itemName=Ac6.zephyr-workbench). After following the previous steps, open the `Zeppelin.code_workspace` file to open the configured workspace.
 
 ## Development
 
