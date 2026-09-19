@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Test build akron-app
+    name: Test build kestrel-app
     strategy:
       fail-fast: false
       matrix:
@@ -61,10 +61,10 @@ jobs:
           west zephyr-export
           west blobs fetch hal_espressif
 
-      - name: Build akron-app
+      - name: Build kestrel-app
         working-directory: zeppelin
         shell: bash
         env:
           ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         run: |
-          west build akron-app
+          west build kestrel-app

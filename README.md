@@ -22,7 +22,7 @@ just setup
 > This may take a while and use quite a bit of space (~3.5GB)!
 4. Try to build a project to confirm setup works:
 ```bash
-just build akron-app
+just build kestrel-app
 ```
 > [!NOTE]
 > You will need to build at least once before your editor will pick up on the libraries
@@ -35,7 +35,7 @@ This repository can also be used with the VSCode extension [*Workbench for Zephy
 ### Build, Run, Test for Board Target
 1. Build app for target:
 ```bash
-just build akron-app
+just build kestrel-app
 ```
 2. Flash app to target
 ```bash
@@ -50,7 +50,7 @@ just console # command alias is work in progress
 > This can only work on a POSIX system (Linux), if using Windows you must use WSL, or MacOS must use a VM.
 1. Build app, but with `--sim` flag
 ```bash
-just build akron-app --sim
+just build kestrel-app --sim
 ```
 2. Run app
 ```bash

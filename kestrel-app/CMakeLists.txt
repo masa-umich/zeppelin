@@ -6,7 +6,7 @@ set(BOARD esp32_devkitc/esp32/procpu) # default board
 list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/../helium-lib)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(akron-app)
+project(kestrel-app)
 
 file(GLOB app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

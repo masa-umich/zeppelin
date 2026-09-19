@@ -28,7 +28,7 @@
                 "toolchain": "zephyr",
                 "sdk": "global",
                 "intellisense.provider": "cpptools",
-                "path": "${workspaceFolder}/zeppelin/akron-app"
+                "path": "${workspaceFolder}/zeppelin/kestrel-app"
             }
         ],
 	}
