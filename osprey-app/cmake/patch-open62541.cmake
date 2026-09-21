@@ -1,0 +1,16 @@
+# open62541 v1.5.8 refers to the old struct tag. Zephyr 4.4 exposes
+# zsock_fd_set as a typedef of struct zvfs_fd_set instead.
+set(header "${OPEN62541_SOURCE_DIR}/arch/zephyr/eventloop_zephyr.h")
+file(READ "${header}" contents)
+set(old "typedef struct zsock_fd_set UA_fd_set;")
+set(new "typedef zsock_fd_set UA_fd_set;")
+string(FIND "${contents}" "${old}" position)
+if(NOT position EQUAL -1)
+    string(REPLACE "${old}" "${new}" contents "${contents}")
+    file(WRITE "${header}" "${contents}")
+else()
+    string(FIND "${contents}" "${new}" position)
+    if(position EQUAL -1)
+        message(FATAL_ERROR "Unexpected open62541 socket type; review the Zephyr compatibility patch")
+    endif()
+endif()
