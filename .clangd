@@ -7,6 +7,7 @@ CompileFlags:
     - -fno-reorder-functions
     - -fstrict-volatile-bitfields
     - -fno-freestanding
+    - -mfp16-format=ieee
 Diagnostics:
   Suppress:
     - attribute_section_invalid_for_target
