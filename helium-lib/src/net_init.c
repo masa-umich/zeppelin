@@ -1,7 +1,7 @@
 #include <helium/net_init.h>
 
 #if !defined(CONFIG_NET_CONNECTION_MANAGER)
-    #error "CONFIG_NET_CONNECTION_MANAGER must be enabled for net_init to work"
+#error "CONFIG_NET_CONNECTION_MANAGER must be enabled for net_init to work"
 #endif
 
 #include <zephyr/kernel.h>
