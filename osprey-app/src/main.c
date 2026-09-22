@@ -1,9 +1,10 @@
-#include <open62541/server.h>
-#include <open62541/server_config_default.h>
-
-#include "zephyr/sys/printk.h"
+#include <helium/net_init.h>
+#include <zephyr/kernel.h>
+#include "server.h"
 
 int main(void) {
-    printk("Hello");
+    net_init(3000);
+    
+    server_init();
     return 0;
 }
