@@ -62,15 +62,14 @@ As the simulation capabilities of this project expand there may be more requirem
 In general, run `just` (no arguments) to get a list of recipes that can be ran:
 ```bash
 Available recipes:
-    build [OPTIONS] target    # Build a target (pass --sim to build for native_sim)
-    check                     # clang-format check of all source files (dryrun)
-    console baud=default_baud # Open a serial console (default baud 115200)
-    flash                     # Flash the connected board
-    format                    # clang-format all source files
-    run-sim                   # Run (and build if needed) the native_sim build
-    setup                     # First time setup
-    update                    # Auto-update west and Zephyr dependencies
-    west *ARGS                # Generic west wrapper
+    build [OPTIONS] target # Build a target (pass --sim to build for native_sim)
+    check                  # clang-format check of all source files (dryrun)
+    flash                  # Flash the connected board
+    format                 # clang-format all source files
+    run-sim target         # Run (and build if needed) the native_sim build
+    setup                  # First time setup
+    update                 # Auto-update west and Zephyr dependencies
+    west *ARGS             # Generic west wrapper
 ```
 Most of these are straightforward but some to take note of are:
 - `just format`: Runs `clang-format` over all source files. If making a pull request, all source files should meet this spec.
