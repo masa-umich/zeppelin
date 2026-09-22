@@ -11,3 +11,9 @@ CompileFlags:
 Diagnostics:
   Suppress:
     - attribute_section_invalid_for_target
+---
+If:
+  PathMatch: helium-lib/.*
+CompileFlags:
+  # The shared Zephyr library is compiled as part of Kestrel.
+  CompilationDatabase: kestrel-app/build

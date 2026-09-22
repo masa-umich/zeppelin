@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.20.0)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(BOARD nucleo_h723zg) # default board
 
+# Pull in the sibling helium-lib as an out-of-tree Zephyr module
+list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/../helium-lib)
+
 # Fetch the sources before Zephyr discovers modules and their Kconfig options.
 # Zephyr builds the library later, using the target's toolchain and
 # configuration.
@@ -24,5 +27,6 @@ list(APPEND EXTRA_ZEPHYR_MODULES "${open62541_SOURCE_DIR}/arch")
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(osprey-app)
 
-target_sources(app PRIVATE src/main.c)
+file(GLOB app_sources src/*.c)
+target_sources(app PRIVATE ${app_sources})
 target_link_libraries(app PRIVATE open62541)
