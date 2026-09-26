@@ -1,5 +1,19 @@
 include(FetchContent)
 zephyr_compile_definitions(_XOPEN_SOURCE=700)
+# Desktop defaults enable expensive Abseil mutex cycle tracking without this.
+# Use consistent release-mode layouts throughout the firmware and libraries.
+zephyr_compile_definitions(NDEBUG=1)
+option(OSPREY_SYNNAX_STRIP_LOGS
+    "Omit Abseil stream logging and CHECK messages (failed checks still abort)" ON)
+if(OSPREY_SYNNAX_STRIP_LOGS)
+    # This is Abseil's supported compile-time stripping switch. Keep it
+    # consistent in all libraries and consumers, including inline checks.
+    zephyr_compile_definitions(ABSL_MIN_LOG_LEVEL=4)
+endif()
+# Dependency caches live outside the application source directory. Keep
+# source paths in retained assertion messages short and independent of host.
+get_filename_component(_synnax_checkout_root "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+zephyr_compile_options("-fmacro-prefix-map=${_synnax_checkout_root}=OSPREY")
 zephyr_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_GLIBCXX_HAS_GTHREADS=1>)
 zephyr_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_GLIBCXX_HAVE_TLS=1>)
 zephyr_include_directories("${CMAKE_CURRENT_LIST_DIR}/../port/include")
@@ -53,6 +67,15 @@ synnax_patch_source("${abseil_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}/patches/ab
 synnax_patch_source("${protobuf_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}/patches/protobuf-zephyr.patch")
 synnax_patch_source("${synnax_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}/patches/synnax-32bit.patch")
 synnax_patch_source("${synnax_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}/patches/synnax-console.patch")
+execute_process(COMMAND "${PYTHON_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_absl_zephyr.py" "${abseil_SOURCE_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${PYTHON_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_absl_time.py" "${abseil_SOURCE_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${PYTHON_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_synnax_streams.py" "${synnax_SOURCE_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
 
 # Code generation must run on the build machine, never with the ARM compiler.
 set(SYNNAX_PROTOC_EXECUTABLE "${SYNNAX_PROTOC_EXECUTABLE}" CACHE FILEPATH "Native protobuf 21.12 protoc")
@@ -90,6 +113,17 @@ if(NOT _protoc_result EQUAL 0 OR NOT _protoc_version STREQUAL "libprotoc 3.21.12
 endif()
 
 set(_synnax_generated "${CMAKE_BINARY_DIR}/synnax-generated")
+# Keep optional constructor and stream implementations in separate archive
+# members. LTO runs after archive extraction; otherwise their unused references
+# can retain the C++ stream/locale initializers in a login-only application.
+set(_synnax_constructor "${_synnax_generated}/synnax_constructor.cpp")
+set(_synnax_uuid_io "${_synnax_generated}/synnax_uuid_io.cpp")
+execute_process(COMMAND "${PYTHON_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_synnax_constructor.py" "${synnax_SOURCE_DIR}"
+    --output "${_synnax_constructor}" COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${PYTHON_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_synnax_uuid_io.py" "${synnax_SOURCE_DIR}"
+    --output "${_synnax_uuid_io}" COMMAND_ERROR_IS_FATAL ANY)
 option(OSPREY_SYNNAX_LITE_PROTO
     "Generate Synnax-owned protobuf messages with the smaller MessageLite runtime"
     ON)
@@ -180,7 +214,8 @@ set(_synnax_client_sources
     x/cpp/url/url.cpp
     x/cpp/base64/base64.cpp)
 list(TRANSFORM _synnax_client_sources PREPEND "${synnax_SOURCE_DIR}/")
-add_library(synnax_client STATIC ${_synnax_client_sources})
+add_library(synnax_client STATIC ${_synnax_client_sources}
+    "${_synnax_constructor}" "${_synnax_uuid_io}")
 add_dependencies(synnax_client zephyr_generated_headers)
 target_include_directories(synnax_client PUBLIC
     "${synnax_SOURCE_DIR}" "${_synnax_generated}"
@@ -189,8 +224,12 @@ target_link_libraries(synnax_client PUBLIC synnax_proto absl::log
     absl::log_initialize absl::log_globals absl::log_sink_registry
     PRIVATE zephyr_interface)
 
-option(OSPREY_SYNNAX_FULL_CLIENT "Build and link the real plaintext gRPC client (experimental)" OFF)
-if(OSPREY_SYNNAX_FULL_CLIENT)
+if(OSPREY_SYNNAX_FULL_CLIENT OR OSPREY_SYNNAX_AUTH_ONLY)
     include("${CMAKE_CURRENT_LIST_DIR}/grpc.cmake")
+endif()
+if(OSPREY_SYNNAX_FULL_CLIENT)
     target_compile_definitions(app PRIVATE OSPREY_SYNNAX_FULL_CLIENT=1)
+endif()
+if(OSPREY_SYNNAX_AUTH_ONLY)
+    target_compile_definitions(app PRIVATE OSPREY_SYNNAX_AUTH_ONLY=1)
 endif()

@@ -61,7 +61,7 @@ int __gthread_once(__gthread_once_t* once, void (*func)(void)) {
     return 0;
 }
 
-namespace std _GLIBCXX_VISIBILITY(default) {
+namespace std {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 __thread void* __once_callable;
@@ -135,9 +135,7 @@ void run_at_thread_exit(void* value) {
     }
 }
 
-void run_main_thread_at_exit() {
-    run_at_thread_exit(&current_thread_exit_context);
-}
+void run_main_thread_at_exit() { run_at_thread_exit(&current_thread_exit_context); }
 
 void initialize_at_thread_exit_key() {
     at_thread_exit_key_error =
@@ -157,10 +155,8 @@ int ensure_at_thread_exit_key() {
 int attach_current_thread_exit_context() {
     if (__gthread_getspecific(at_thread_exit_key) != nullptr) return 0;
 
-    const int error = __gthread_setspecific(
-        at_thread_exit_key,
-        &current_thread_exit_context
-    );
+    const int error =
+        __gthread_setspecific(at_thread_exit_key, &current_thread_exit_context);
     // Zephyr's native main thread is not in its POSIX thread pool, so pthread
     // keys reject it. Its registered atexit handler drains the same TLS list.
     return error == EINVAL && k_current_get() == &z_main_thread ? 0 : error;
@@ -183,9 +179,8 @@ int register_cxa_thread_exit(void (*destructor)(void*), void* object) noexcept {
     if (error != 0) return -1;
     if (attach_current_thread_exit_context() != 0) return -1;
 
-    auto* element = static_cast<cxa_thread_exit_elt*>(
-        std::malloc(sizeof(cxa_thread_exit_elt))
-    );
+    auto* element =
+        static_cast<cxa_thread_exit_elt*>(std::malloc(sizeof(cxa_thread_exit_elt)));
     if (element == nullptr) return -1;
 
     element->destructor = destructor;
@@ -272,7 +267,7 @@ void notify_all_at_thread_exit(condition_variable& condition, unique_lock<mutex>
 }
 
 _GLIBCXX_END_NAMESPACE_VERSION
-}  // namespace std _GLIBCXX_VISIBILITY(default)
+}  // namespace std
 
 /*
  * The SDK's libsupc++ was built for a single thread, so its guard routines do
@@ -350,11 +345,8 @@ extern "C" __cxxabiv1::__cxa_eh_globals* __cxa_get_globals_fast() noexcept {
     return &thread_exception_globals;
 }
 
-extern "C" int __cxa_thread_atexit(
-    void (*destructor)(void*),
-    void* object,
-    void* dso_handle
-) noexcept {
+extern "C" int __cxa_thread_atexit(void (*destructor)(void*), void* object,
+                                   void* dso_handle) noexcept {
     (void)dso_handle;
     return std::cxa_thread_atexit_impl(destructor, object);
 }

@@ -1,7 +1,11 @@
 include(FetchContent)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 option(OSPREY_SYNNAX_MINIMAL_GRPC
-    "Strip optional advanced gRPC channel feature registrations on Zephyr" ON)
+    "Strip optional gRPC features, experiments and tracing on Zephyr" ON)
+option(OSPREY_SYNNAX_GRPC_NO_EXCEPTIONS
+    "Compile gRPC without C++ exception cleanup to reduce flash (OOM is fatal)" ON)
+option(OSPREY_SYNNAX_CLIENT_ONLY_STUBS
+    "Generate RPC client implementations without unused server implementations" ON)
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
@@ -63,7 +67,7 @@ endif()
 file(READ "${zlib_SOURCE_DIR}/CMakeLists.txt" _zlib_cmake)
 string(REPLACE "cmake_minimum_required(VERSION 2.4.4)"
     "cmake_minimum_required(VERSION 3.5)" _zlib_cmake "${_zlib_cmake}")
-file(WRITE "${zlib_SOURCE_DIR}/CMakeLists.txt" "${_zlib_cmake}")
+file(CONFIGURE OUTPUT "${zlib_SOURCE_DIR}/CMakeLists.txt" CONTENT "${_zlib_cmake}" @ONLY)
 
 execute_process(COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_LIST_DIR}/patch_grpc_zephyr.py" "${grpc_SOURCE_DIR}"
@@ -79,13 +83,13 @@ if(NOT _grpc_minimal_patch_result EQUAL 0)
     message(FATAL_ERROR "Could not make optional gRPC features removable")
 endif()
 execute_process(COMMAND "${Python3_EXECUTABLE}"
-    "${CMAKE_CURRENT_LIST_DIR}/patch_absl_zephyr.py" "${abseil_SOURCE_DIR}"
-    RESULT_VARIABLE _absl_patch_result)
-if(NOT _absl_patch_result EQUAL 0)
-    message(FATAL_ERROR "Could not apply Zephyr low-level allocation support to Abseil")
-endif()
-execute_process(COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_LIST_DIR}/patch_grpc_sockets.py" "${grpc_SOURCE_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_grpc_event_engine.py" "${grpc_SOURCE_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/patch_grpc_codegen.py" "${grpc_SOURCE_DIR}"
     COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_LIST_DIR}/patch_synnax_unsecure.py" "${synnax_SOURCE_DIR}"
@@ -124,7 +128,7 @@ add_subdirectory("${grpc_SOURCE_DIR}" "${grpc_BINARY_DIR}" EXCLUDE_FROM_ALL)
 if(TARGET grpc_unsecure)
     target_compile_definitions(grpc_unsecure PUBLIC GRPC_ARES=0 GPR_ZEPHYR=1)
     if(OSPREY_SYNNAX_MINIMAL_GRPC)
-        target_compile_definitions(grpc_unsecure PRIVATE GRPC_MINIMAL_CLIENT=1)
+        target_compile_definitions(grpc_unsecure PUBLIC GRPC_MINIMAL_CLIENT=1)
     endif()
     get_target_property(_grpc_core_links grpc_unsecure LINK_LIBRARIES)
     list(REMOVE_ITEM _grpc_core_links rt)
@@ -135,6 +139,16 @@ if(TARGET grpc++_unsecure)
     get_target_property(_grpc_cpp_links grpc++_unsecure LINK_LIBRARIES)
     list(REMOVE_ITEM _grpc_cpp_links rt)
     set_property(TARGET grpc++_unsecure PROPERTY LINK_LIBRARIES "${_grpc_cpp_links}")
+endif()
+if(OSPREY_SYNNAX_GRPC_NO_EXCEPTIONS)
+    # The pinned gRPC sources use status returns, not C++ throws. Keep
+    # exceptions enabled in Synnax and the application; a failure to allocate
+    # within gRPC cannot safely unwind through these library frames.
+    foreach(_grpc_target IN ITEMS grpc_unsecure grpc++_unsecure gpr)
+        target_compile_options(${_grpc_target} PRIVATE
+            $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+            $<$<COMPILE_LANGUAGE:CXX>:-fno-unwind-tables>)
+    endforeach()
 endif()
 
 # grpc_cpp_plugin is a build-machine tool. Compile its two required sources
@@ -151,6 +165,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}"
     "-DGRPC_SOURCE_DIR=${grpc_SOURCE_DIR}"
     "-DPROTOBUF_SOURCE_DIR=${protobuf_SOURCE_DIR}"
     "-DPROTOBUF_NATIVE_BUILD_DIR=${_grpc_native_protobuf_build}"
+    "-DOSPREY_GRPC_CLIENT_ONLY=${OSPREY_SYNNAX_CLIENT_ONLY_STUBS}"
     RESULT_VARIABLE _grpc_host_configure)
 if(NOT _grpc_host_configure EQUAL 0)
     message(FATAL_ERROR "Could not configure native grpc_cpp_plugin build")
@@ -180,6 +195,7 @@ endif()
 file(GLOB_RECURSE _synnax_grpc_sources CONFIGURE_DEPENDS
     "${_synnax_generated}/core/pkg/transport/grpc/*.grpc.pb.cc")
 target_sources(synnax_proto PRIVATE ${_synnax_grpc_sources})
+target_link_libraries(synnax_proto PUBLIC grpc++_unsecure)
 target_link_libraries(synnax_client PUBLIC grpc++_unsecure)
 target_sources(synnax_client PRIVATE "${synnax_SOURCE_DIR}/client/cpp/transport.cpp")
 

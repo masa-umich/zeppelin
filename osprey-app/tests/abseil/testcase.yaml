@@ -1,0 +1,15 @@
+tests:
+  osprey.abseil.port:
+    platform_allow:
+      - qemu_cortex_m3
+    tags:
+      - abseil
+      - synchronization
+      - allocator
+    harness: console
+    harness_config:
+      type: multi_line
+      ordered: true
+      regex:
+        - "ABSL_PORT_TEST allocator=1 sync=1"
+        - "ABSL_TIME_TEST utc=1 offset=1 unsupported_zone=1"

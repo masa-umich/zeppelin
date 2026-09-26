@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+
+from patch_io import write_text_if_changed
 import re
 
 
@@ -48,13 +50,13 @@ def main() -> int:
             "#pragma once\n", "#pragma once\n\n#include <stdexcept>\n", 1
         )
     if "TLS is disabled in the Zephyr client build" in source:
-        header.write_text(source, encoding="utf-8")
+        write_text_if_changed(header, source, encoding="utf-8")
         return 0
     source, ca_count = ca_constructor.subn(ca_replacement, source, count=1)
     source, mtls_count = mtls_constructor.subn(mtls_replacement, source, count=1)
     if ca_count != 1 or mtls_count != 1:
         raise SystemExit(f"expected both TLS Pool constructors in {header}")
-    header.write_text(source, encoding="utf-8")
+    write_text_if_changed(header, source, encoding="utf-8")
     return 0
 
 

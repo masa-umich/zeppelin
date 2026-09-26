@@ -3,6 +3,10 @@
 
 // This is the real upstream umbrella header, with every client API included.
 #include "client/cpp/synnax.h"
+#if defined(OSPREY_SYNNAX_AUTH_ONLY)
+#include "core/pkg/transport/grpc/auth/auth.grpc.pb.h"
+#include "freighter/cpp/grpc/grpc.h"
+#endif
 
 static int bring_up() {
     try {
@@ -22,7 +26,25 @@ static int bring_up() {
 
         printk("Osprey: Synnax %s master header and protobuf ready (%u bytes)\n",
                SYNNAX_CLIENT_VERSION, static_cast<unsigned>(wire.size()));
-#if defined(OSPREY_SYNNAX_FULL_CLIENT)
+#if defined(OSPREY_SYNNAX_AUTH_ONLY)
+        if (config.secure)
+            throw std::invalid_argument("TLS is disabled in the Zephyr client build");
+        // Construct only the required upstream transport and authentication
+        // API. The complete Synnax constructor eagerly instantiates every API.
+        auto pool = std::make_shared<freighter::grpc::Pool>();
+        auto login = std::make_unique<freighter::grpc::UnaryClient<
+            grpc::auth::LoginRequest, grpc::auth::LoginResponse,
+            grpc::auth::AuthLoginService>>(pool, config.address());
+        synnax::auth::Middleware auth(std::move(login), config.username,
+                                      config.password);
+        const auto error = auth.authenticate();
+        if (error) {
+            printk("Synnax login failed: %s\n", error.message().c_str());
+            return 1;
+        }
+        printk("Authenticated directly with Synnax %s.\n",
+               auth.cluster_info.node_version.c_str());
+#elif defined(OSPREY_SYNNAX_FULL_CLIENT)
         synnax::Synnax client(config);
         const auto error = client.auth->authenticate();
         if (error) {

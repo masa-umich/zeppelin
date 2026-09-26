@@ -4,6 +4,8 @@
 import argparse
 from pathlib import Path
 
+from patch_io import write_text_if_changed
+
 
 def replace(path: Path, before: str, after: str) -> None:
     text = path.read_text()
@@ -11,7 +13,7 @@ def replace(path: Path, before: str, after: str) -> None:
         return
     if before not in text:
         raise SystemExit(f"gRPC socket patch insertion point missing in {path}")
-    path.write_text(text.replace(before, after, 1))
+    write_text_if_changed(path, text.replace(before, after, 1))
 
 
 def main() -> None:
@@ -36,6 +38,18 @@ def main() -> None:
             "}\n"
             "grpc_poll_function_type grpc_poll_function = zephyr_poll;\n"
             "#elif !defined(GPR_AIX)\ngrpc_poll_function_type grpc_poll_function = poll;\n")
+    replace(source / "src/core/lib/iomgr/ev_posix.cc",
+            "    &grpc_ev_epoll1_posix,\n",
+            "#if defined(GRPC_POSIX_SOCKET_EV_EPOLL1)\n"
+            "    &grpc_ev_epoll1_posix,\n"
+            "#else\n    nullptr,\n#endif\n")
+    replace(source / "src/core/lib/event_engine/posix_engine/event_poller_posix_default.cc",
+            '    if (PollStrategyMatches(*it, "epoll1")) {\n'
+            "      poller = MakeEpoll1Poller(scheduler);\n    }\n",
+            "#if defined(GRPC_POSIX_SOCKET_EV_EPOLL1)\n"
+            '    if (PollStrategyMatches(*it, "epoll1")) {\n'
+            "      poller = MakeEpoll1Poller(scheduler);\n    }\n"
+            "#endif\n")
 
     # Despite gRPC's historical macro name, eventfd is also implemented by
     # Zephyr and is pollable. No Linux epoll or pipe backend is enabled.
@@ -53,7 +67,7 @@ def main() -> None:
                            else "#elif defined(__ZEPHYR__)")
         end = text.index("#elif" if header.startswith("src/") else "#else", start + 6)
         block = text[start:end].replace("#define GRPC_POSIX_NO_SPECIAL_WAKEUP_FD 1\n", "")
-        path.write_text(text[:start] + block + text[end:])
+        write_text_if_changed(path, text[:start] + block + text[end:])
 
     for relative in ["src/core/lib/iomgr/wakeup_fd_eventfd.cc",
                      "src/core/lib/event_engine/posix_engine/wakeup_fd_eventfd.cc"]:
@@ -75,7 +89,7 @@ def main() -> None:
     text = path.read_text()
     text = text.replace("#ifdef GRPC_POSIX_WAKEUP_FD\n",
                         "#if defined(GRPC_POSIX_WAKEUP_FD) && !defined(GPR_ZEPHYR)\n")
-    path.write_text(text)
+    write_text_if_changed(path, text)
     wakeup = source / "src/core/lib/iomgr/wakeup_fd_posix.cc"
     replace(wakeup,
             "    } else if (grpc_allow_pipe_wakeup_fd &&\n"
@@ -118,7 +132,7 @@ def main() -> None:
                     "  // Zephyr cannot exec: there is no child process to inherit the fd.\n"
                     "  return absl::OkStatus();\n"
                     "#else\n" + body + "\n#endif")
-            path.write_text(text[:start] + body + text[end:])
+            write_text_if_changed(path, text[:start] + body + text[end:])
 
 
 if __name__ == "__main__":

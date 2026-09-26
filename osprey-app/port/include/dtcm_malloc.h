@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/kernel.h>
 #include <zephyr/linker/section_tags.h>
 
 #if defined(CONFIG_USERSPACE)

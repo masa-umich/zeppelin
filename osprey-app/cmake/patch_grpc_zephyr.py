@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from patch_io import write_text_if_changed
+
 
 ZEPHYR_PLATFORM = '''#elif defined(__ZEPHYR__) || defined(GPR_ZEPHYR)
 #define GPR_PLATFORM_STRING "zephyr"
@@ -47,7 +49,7 @@ def main() -> int:
         if marker not in source:
             raise SystemExit(f"could not find gRPC platform insertion point in {header}")
         source = source.replace(marker, ZEPHYR_PLATFORM + marker, 1)
-        header.write_text(source, encoding="utf-8")
+        write_text_if_changed(header, source, encoding="utf-8")
 
     iomgr_header = args.grpc_source / "src/core/lib/iomgr/port.h"
     iomgr = iomgr_header.read_text(encoding="utf-8")
@@ -98,7 +100,7 @@ def main() -> int:
         if feature_block not in iomgr:
             raise SystemExit(f"could not find gRPC POSIX feature bundle in {iomgr_header}")
         iomgr = iomgr.replace(feature_block, "#if !defined(GPR_ZEPHYR)\n" + feature_block + "#else\n" + zephyr_features + "#endif\n", 1)
-    iomgr_header.write_text(iomgr, encoding="utf-8")
+    write_text_if_changed(iomgr_header, iomgr, encoding="utf-8")
 
     if args.zlib_source is not None:
         # zlib's generated zconf.h defines the historical FAR macro. Zephyr's
@@ -114,7 +116,7 @@ def main() -> int:
                 if marker not in text:
                     raise SystemExit(f"could not find zlib config insertion point in {template}")
                 text = text.replace(marker, marker + zephyr_include, 1)
-                template.write_text(text, encoding="utf-8")
+                write_text_if_changed(template, text, encoding="utf-8")
 
     # ARM's default enum ABI chooses a byte for grpc_status_code. Abseil's
     # integer parser requires 32/64 bits, as gRPC expects on desktop targets.
@@ -129,7 +131,7 @@ def main() -> int:
         status = status.replace(
             sentinel, sentinel + ",\n  GRPC_STATUS__FORCE_32_BIT = 0x7fffffff", 1
         )
-        status_header.write_text(status, encoding="utf-8")
+        write_text_if_changed(status_header, status, encoding="utf-8")
 
     # Zephyr's libc does not expose _SC_NPROCESSORS_CONF. Use its architecture
     # APIs so gRPC gets the configured CPU count and current CPU identity.
@@ -165,7 +167,7 @@ def main() -> int:
             + "\n#endif",
             1,
         )
-    cpu_source.write_text(cpu_text, encoding="utf-8")
+    write_text_if_changed(cpu_source, cpu_text, encoding="utf-8")
 
     cmake = args.grpc_source / "CMakeLists.txt"
     cmake_source = cmake.read_text(encoding="utf-8")
@@ -185,7 +187,7 @@ def main() -> int:
             "\nendif()\n" + end,
             1,
         )
-        cmake.write_text(cmake_source, encoding="utf-8")
+        write_text_if_changed(cmake, cmake_source, encoding="utf-8")
     return 0
 
 

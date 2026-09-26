@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from patch_io import write_text_if_changed
+
 
 def replace_once(path: Path, old: str, new: str, label: str) -> None:
     text = path.read_text(encoding="utf-8")
@@ -13,13 +15,36 @@ def replace_once(path: Path, old: str, new: str, label: str) -> None:
         return
     if old not in text:
         raise SystemExit(f"could not patch {label} in {path}")
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    write_text_if_changed(path, text.replace(old, new, 1), encoding="utf-8")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("abseil_source", type=Path)
     root = parser.parse_args().abseil_source
+
+    # POSIX stderr is not a dependable early-boot console on Zephyr. RawLog
+    # must still report allocator/invariant failures before aborting.
+    raw_logging = root / "absl/base/internal/raw_logging.cc"
+    replace_once(
+        raw_logging,
+        '#include "absl/base/log_severity.h"\n',
+        '#include "absl/base/log_severity.h"\n'
+        '#if defined(__ZEPHYR__)\n#include <zephyr/sys/printk.h>\n'
+        '#define ABSL_LOW_LEVEL_WRITE_SUPPORTED 1\n#endif\n',
+        "Zephyr raw console logging",
+    )
+    replace_once(
+        raw_logging,
+        "#elif defined(ABSL_HAVE_POSIX_WRITE)\n  write(STDERR_FILENO, s, len);\n",
+        "#elif defined(__ZEPHYR__)\n"
+        "  while (len != 0) {\n"
+        "    const size_t chunk = len < 128 ? len : 128;\n"
+        '    printk("%.*s", static_cast<int>(chunk), s);\n'
+        "    s += chunk;\n    len -= chunk;\n  }\n"
+        "#elif defined(ABSL_HAVE_POSIX_WRITE)\n  write(STDERR_FILENO, s, len);\n",
+        "Zephyr raw console writer",
+    )
 
     # Abseil Mutex and thread identity require LowLevelAlloc. Zephyr's H723 has
     # no MMU-backed mmap, so provide the same arena API using k_malloc/k_free.
@@ -141,7 +166,7 @@ def main() -> int:
         "#define ABSL_THREAD_IDENTITY_MODE ABSL_THREAD_IDENTITY_MODE_USE_CPP11\n"
     )
     if old_tls_mode in identity_text:
-        identity_header.write_text(identity_text.replace(old_tls_mode, "", 1), encoding="utf-8")
+        write_text_if_changed(identity_header, identity_text.replace(old_tls_mode, "", 1), encoding="utf-8")
 
     return 0
 
