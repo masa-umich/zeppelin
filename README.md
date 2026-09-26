@@ -2,6 +2,9 @@
 
 MASA's board firmware made with Zephyr
 
+Osprey's C++ Synnax bring-up and build instructions are in
+[osprey-app/README.md](osprey-app/README.md).
+
 This repo is setup as a T2 "star topology" meaning the apps are in the same repository as the manifest file. This means you should not clone this repo directly; instead, you should use `west` to clone it into a "west workspace" directory.
 
 ## Setup

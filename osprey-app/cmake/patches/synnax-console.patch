@@ -1,0 +1,14 @@
+--- a/x/cpp/log/log.cpp
++++ b/x/cpp/log/log.cpp
+@@ -70,7 +70,10 @@
+ }
+ 
+ bool stderr_is_terminal() {
+-#ifdef _WIN32
++#if defined(__ZEPHYR__)
++    // Zephyr routes stdio to the console without a POSIX terminal device.
++    return false;
++#elif defined(_WIN32)
+     return _isatty(_fileno(stderr)) != 0;
+ #else
+     return isatty(fileno(stderr)) != 0;

@@ -1,5 +1,6 @@
 **/.venv/
 **/build/
+**/build-*/
 **/.cache/
 **/__pycache__/
 **/__cmake_systeminformation

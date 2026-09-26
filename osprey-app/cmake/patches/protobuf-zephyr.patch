@@ -1,0 +1,17 @@
+diff --git a/src/google/protobuf/compiler/importer.cc b/src/google/protobuf/compiler/importer.cc
+--- a/src/google/protobuf/compiler/importer.cc
++++ b/src/google/protobuf/compiler/importer.cc
+@@ -417,7 +417,13 @@
+   for (int i = 0; i < mapping_index; i++) {
+     if (ApplyMapping(*virtual_file, mappings_[i].virtual_path,
+                      mappings_[i].disk_path, shadowing_disk_file)) {
++#if defined(__ZEPHYR__)
++      // Zephyr provides stat(), but does not implement access(F_OK).
++      struct stat file_info;
++      if (stat(shadowing_disk_file->c_str(), &file_info) >= 0) {
++#else
+       if (access(shadowing_disk_file->c_str(), F_OK) >= 0) {
++#endif
+         // File exists.
+         return SHADOWED;
+       }
