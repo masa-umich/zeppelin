@@ -18,10 +18,12 @@ endif()
 find_package(Git REQUIRED)
 set(open62541_fix 938fcc53866d1e7d572b07a3bfe6c9f134240262)
 FetchContent_Declare(open62541_zephyr_patch
+    # Full object IDs keep GitHub's changing abbreviation length from
+    # invalidating the patch checksum.
     URL
-        "https://github.com/open62541/open62541/commit/${open62541_fix}.patch"
+        "https://github.com/open62541/open62541/commit/${open62541_fix}.patch?full_index=1"
     URL_HASH
-        SHA256=b48d535a03b3ffaca70eb5358c40dce8e861839611718c68a7e1d33c4738fc76
+        SHA256=6ca0477b6961abc2449ce63273acb565a9ae9121324c22cf503386643c366358
     DOWNLOAD_NO_EXTRACT TRUE
     DOWNLOAD_NAME zephyr-fd-set.patch
 )
