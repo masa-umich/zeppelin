@@ -1,0 +1,26 @@
+using "platforms/cpus/stm32h7.repl"
+
+nvic:
+    systickFrequency: 550000000
+
+// flash:
+//    size: 0x100000
+
+// axi_sram:
+//    size: 0x20000
+
+sram1:
+    size: 0xC000
+
+dtcm:
+    size: 0x20000
+
+itcm:
+    size: 0x10000
+
+// Stub out complex unmodeled peripherals to avoid crash on HAL initialization
+pwr:
+    size: 0x400
+
+rcc:
+    size: 0x400

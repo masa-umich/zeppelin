@@ -1,0 +1,10 @@
+using sysbus
+
+mach create "stm32h725-machine"
+machine LoadPlatformDescription @tests/stm32h725.repl
+sysbus LoadELF @osprey-app/build/zephyr/zephyr.elf
+sysbus.cpu VectorTableOffset 0x08000000
+
+showAnalyzer sysbus.usart3
+
+start

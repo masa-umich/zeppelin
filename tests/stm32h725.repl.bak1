@@ -1,0 +1,46 @@
+using "platforms/cpus/stm32h7.repl"
+
+nvic:
+    systickFrequency: 550_000_000
+
+dwt:
+    frequency: 550_000_000
+
+flashBank1:
+    size: 0x100000
+
+flashBank2: @ none
+
+itcm:
+    size: 0x10000
+
+dtcm:
+    size: 0x20000
+
+axiSram:
+    size: 0x50000
+
+sram1:
+    size: 0x4000
+
+sram2: @ sysbus 0x30004000
+    size: 0x4000
+
+sram3: @ none
+
+sram4:
+    size: 0x4000
+
+backupSram:
+    size: 0x1000
+
+system_flash_ro:
+    init add:
+        WriteWord 0x1E880 0x400
+
+externalFlash: @ none
+sramBank1: @ none
+sramBank2: @ none
+sdramBank1: @ none
+sdramBank2: @ none
+qspi: @ none
