@@ -2,6 +2,9 @@
 # Mostly exists to not have to activate the python venv by wrapping `uv run`
 set ignore-comments := true
 
+# Renode simulation and platform-specific host networking setup.
+mod sim
+
 # just selects the platform's shell and resolves its executable automatically.
 # Windows uses built-in Windows PowerShell; Git Bash is not required.
 [unix]
@@ -36,30 +39,15 @@ update:
     uv run west zephyr-export
     uv run west blobs fetch hal_espressif
 
-# Build a target (pass --sim to build for native_sim)
-[arg("sim", long, value="true")]
-build target sim="false":
+# Build a target
+build target:
     @echo "{{BLUE}}Building{{NORMAL}} {{target}}..."
-    uv run west build {{target}} --pristine always --build-dir ./{{target}}/build/ {{ if sim == "true" {"-b native_sim"} else {""}}}
-    
+    uv run west build {{target}} --pristine auto --build-dir ./{{target}}/build/
+
 # Flash the connected board
-flash:
-    uv run west flash
+flash target: (build target)
+    uv run west flash --build-dir ./{{target}}/build/
 
-# Run (and build if needed) the native_sim build
-[unix]
-run-sim target: (build target "true")
-   @echo "{{BLUE}}Running native_sim for {{GREEN}}{{target}}{{NORMAL}}"
-   ./{{target}}/build/zephyr/zephyr.exe
-
-# default_baud := "115200"
-
-# Open a serial console (default baud 115200)
-#console baud=default_baud:
-#    @echo "{{BLUE}}Starting serial console with baud rate: {{GREEN}}{{baud}}{{NORMAL}}"
-#    uv run west espressif monitor
-#    # TODO: make into generic serial monitor with something like minicom
- 
 # clang-format check of all source files (dryrun)
 [unix]
 check:

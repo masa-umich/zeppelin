@@ -1,0 +1,25 @@
+using sysbus
+$quiet ?= true
+$network ?= true
+$tapName ?= "renode-tap0"
+$vmnetSocket ?= "/tmp/renode-vmnet.sock"
+
+mach create "stm32h725-machine"
+machine LoadPlatformDescription $ORIGIN/stm32h725.repl
+
+# Known H7 model limitations; retain errors and warnings from other devices.
+if $quiet "logLevel 3 sysbus.cpu"
+if $quiet "logLevel 3 sysbus.nvic"
+if $quiet "logLevel 3 sysbus.rcc"
+if $quiet "logLevel 3 sysbus.lpuart1"
+# Only silence the unmodeled DBGMCU ID/control registers, not all bus warnings.
+if $quiet "sysbus SilenceRange <0x5C001000 0x8>"
+
+sysbus LoadELF $elf
+sysbus.cpu VectorTableOffset 0x08000000
+
+# Select the host bridge automatically; host installation/configuration is manual.
+include $ORIGIN/network.py
+# One command owns setup and startup, so a failed bridge cannot fall through
+# Renode's conditional command and start a disconnected simulation.
+launch_sim $network $tapName $vmnetSocket
