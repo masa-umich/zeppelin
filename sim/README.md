@@ -1,7 +1,7 @@
 # STM32H725 host networking
 
-The serial launcher works without network dependencies. To connect its inherited
-Ethernet model to your computer, set `$network=true` before including the script:
+The launcher currently enables host networking by default. To connect its
+inherited Ethernet model to your computer, complete the OS setup below, then run:
 
 ```sh
 renode --disable-gui --console -e '$network=true; $elf=@osprey-app/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
@@ -13,6 +13,12 @@ The launcher detects the OS, creates a switch, and connects `sysbus.ethernet`
 and the host interface before starting emulation. It does not install drivers,
 change host addresses, or bridge your physical LAN. Use a fresh Renode process
 for each run; the named bridge/switch are created once.
+Bridge setup errors stop startup; the launcher does not fall back to a
+disconnected simulation. For serial-only use without network prerequisites:
+
+```sh
+renode --disable-gui --console -e '$network=false; $elf=@osprey-app/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
+```
 
 Defaults:
 
@@ -57,7 +63,9 @@ driver paths/components can differ in newer installers.
 In an elevated PowerShell, create the adapter and assign its address:
 
 ```powershell
-& "$env:ProgramFiles\OpenVPN\bin\tapctl.exe" create --name renode-tap0
+& "$env:ProgramFiles\OpenVPN\bin\tapctl.exe" create --hwid 'root\tap0901' --name renode-tap0
+& "$env:ProgramFiles\OpenVPN\bin\tapctl.exe" list
+Get-NetAdapter -Name renode-tap0 | Format-List Name, InterfaceDescription, Status, InterfaceGuid
 netsh interface ipv4 set address name="renode-tap0" static 192.168.100.1 255.255.255.0
 ```
 
@@ -67,6 +75,23 @@ PowerShell. Check that the adapter is enabled in Windows network settings.
 Allow your chosen test application's traffic on this adapter in Windows
 Firewall if blocked; no default gateway is required for host-only traffic.
 To remove the adapter, use `tapctl.exe list`, then `tapctl.exe delete <GUID>`.
+
+### “Failed to retrieve the GUID of the TAP device”
+
+Installing OpenVPN does not guarantee an adapter named `renode-tap0` exists.
+First run the `tapctl.exe list` and `Get-NetAdapter` commands above. The named
+adapter must use TAP-Windows6, not Wintun or OpenVPN DCO. The explicit hardware
+ID in the creation command requests the TAP-Windows driver.
+
+If it is missing, create it using the command above. If an existing TAP adapter
+has another name, either rename it or set `$tapName="that-name";` in the Renode
+command. The launcher accepts adapter names containing letters, digits, hyphens
+and underscores. If creation fails, repair the OpenVPN installation with its
+TAP-Windows6 component enabled, then retry from an elevated PowerShell. Adapter
+status may be disconnected before Renode opens it; that alone is not a failure.
+
+References: [Renode Windows TAP setup](https://renode.readthedocs.io/en/latest/networking/host-network.html#using-tap-interface-on-windows),
+[OpenVPN tapctl](https://community.openvpn.net/Pages/Tapctl).
 
 ## macOS
 

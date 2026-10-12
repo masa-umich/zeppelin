@@ -20,8 +20,6 @@ sysbus.cpu VectorTableOffset 0x08000000
 
 # Select the host bridge automatically; host installation/configuration is manual.
 include $ORIGIN/network.py
-if $network "setup_network $tapName $vmnetSocket"
-
-# Allow uart_connect to attach before the one-time boot output.
-python "from threading import Timer; Timer(1.0, emulationManager.Instance.CurrentEmulation.StartAll).start()"
-uart_connect sysbus.usart3
+# One command owns setup and startup, so a failed bridge cannot fall through
+# Renode's conditional command and start a disconnected simulation.
+launch_sim $network $tapName $vmnetSocket
