@@ -36,30 +36,28 @@ update:
     uv run west zephyr-export
     uv run west blobs fetch hal_espressif
 
-# Build a target (pass --sim to build for native_sim)
-[arg("sim", long, value="true")]
-build target sim="false":
+# Build a target
+build target:
     @echo "{{BLUE}}Building{{NORMAL}} {{target}}..."
-    uv run west build {{target}} --pristine always --build-dir ./{{target}}/build/ {{ if sim == "true" {"-b native_sim"} else {""}}}
-    
+    uv run west build {{target}} --pristine always --build-dir ./{{target}}/build/
+
 # Flash the connected board
-flash:
-    uv run west flash
+flash target:
+    uv run west flash --build-dir ./{{target}}/build/
 
-# Run (and build if needed) the native_sim build
+# Run a hardware build in Renode (defaults to osprey-app)
 [unix]
-run-sim target: (build target "true")
-   @echo "{{BLUE}}Running native_sim for {{GREEN}}{{target}}{{NORMAL}}"
-   ./{{target}}/build/zephyr/zephyr.exe
+[arg("verbose", long, short="v", value="true")]
+sim target verbose="false":
+    @command -v renode >/dev/null 2>&1 || { echo "Renode is not installed or is not on PATH. Install it from https://renode.io/#downloads" >&2; exit 1; }
+    renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
 
-# default_baud := "115200"
+[windows]
+[arg("verbose", long, short="v", value="true")]
+sim target verbose="false":
+    @if (-not (Get-Command renode -ErrorAction SilentlyContinue)) { Write-Error "Renode is not installed or is not on PATH. Install it from https://renode.io/#downloads"; exit 1 }
+    renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
 
-# Open a serial console (default baud 115200)
-#console baud=default_baud:
-#    @echo "{{BLUE}}Starting serial console with baud rate: {{GREEN}}{{baud}}{{NORMAL}}"
-#    uv run west espressif monitor
-#    # TODO: make into generic serial monitor with something like minicom
- 
 # clang-format check of all source files (dryrun)
 [unix]
 check:

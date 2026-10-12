@@ -39,45 +39,28 @@ just build kestrel-app
 ```
 2. Flash app to target
 ```bash
-just flash
+just flash kestrel-app
 ```
-3. Open a serial terminal to target
-```bash
-just console # command alias is work in progress
-```
-### Build, Run, Test for Simulation (POSIX only)
-> [!IMPORTANT]
-> This can only work on a POSIX system (Linux), if using Windows you must use WSL, or MacOS must use a VM.
-1. Build app, but with `--sim` flag
-```bash
-just build kestrel-app --sim
-```
-2. Run app
-```bash
-just run-sim
-```
-As the simulation capabilities of this project expand there may be more requirements and libraries but for now this is it!
+3. If relevant, use your favorite serial terminal to connect to the board. (just command alias comming soon)
 
-### Useful Commands & Workflow
-In general, run `just` (no arguments) to get a list of recipes that can be ran:
+## Simulation
+For firmware simulation this repository is setup for Renode which is a specialized simulation environment for embedded systems, sort of like QEMU.
+
+### Installation
+The installation process for Renode can be somewhat complicated and so is not automated like the rest of this repository. Refer to the [Renode GitHub README installation section](https://github.com/renode/renode/blob/master/README.md#installation) for instructions.
+
+### Running the Simulation
+To run a full firmware simulation of an app using Renode, a just command has been made to automate the process:
 ```bash
-Available recipes:
-    build [OPTIONS] target    # Build a target (pass --sim to build for native_sim)
-    check                     # clang-format check of all source files (dryrun)
-    console baud=default_baud # Open a serial console (default baud 115200)
-    flash                     # Flash the connected board
-    format                    # clang-format all source files
-    run-sim                   # Run (and build if needed) the native_sim build
-    setup                     # First time setup
-    update                    # Auto-update west and Zephyr dependencies
-    west *ARGS                # Generic west wrapper
+just sim <target>
 ```
-Most of these are straightforward but some to take note of are:
-- `just format`: Runs `clang-format` over all source files. If making a pull request, all source files should meet this spec.
-- `just update`: Ensures that depencies are installed and update for Zephyr, modules, west packages, cmake variables, and blobs.
-- `just west <args>`: A generic wrapper for west commands. Useful if you don't want to activate the venv to run a command.
+By default this supresses most non-critical warnings and errors, but if you want that to be printed run the same command with the `-v` or `--verbose` flag.
+
+In the future more advanced simulations may be made that emulate off-chip peripherals and other advanced behavior, but for now this is it!
 
 ## Troubleshooting
+
+Below are some common issues you might run into, but if you can't find what you need, remember you can always ask in [#av_nostupidquestions](https://masaumich.slack.com/archives/C06RKGKKT6D)!
 
 <details>
     <summary>Flashing on Linux permission fails</summary>
@@ -105,4 +88,26 @@ It's possible that dependencies will be added to the project but not to the just
 This might happen if you don't follow step 2 of the guide exactly. If you try to use `git clone` it will not work because this repository needs to exist in another directory called your "workspace" and even if you make a dedicated directory and then try to use `git clone`, it will still fail because west needs to find a `.west` directory (which is auto-generated when using `west init`). 
 
 So TLDR: just use the exact `uvx west init ...` command from above.
+</details>
+
+<details>
+    <summary>Updating your branch with changes from main</summary>
+
+This isn't really a Zeppelin specific issue, but one I wanted to cover in this README because it's something you'll probably run into.
+
+If you're working on a branch and there are new changes in main that you want to add to your branch, you should use this command pattern:
+```bash
+git fetch origin
+git rebase origin/main
+git push --force-with-lease origin HEAD
+```
+This will fetch changes from main, rebase the timeline so that they're applied retroactively before you made any changes, then push that new timeline onto your branch. This is such a common pattern I made a Git alias which you can copy like this:
+```bash
+git config --global alias.rebase-push '!git fetch origin && git rebase origin/main && git push --force-with-lease origin HEAD'
+```
+Then updating your branch becomes as easy as running:
+```bash
+git rebase-push
+```
+The only caveat with doing things this way is that it can have merge conflicts if the changes from main interfere with changes you've made on your branch, in which case I reccomend getting an LLM to help you fix the situation.
 </details>

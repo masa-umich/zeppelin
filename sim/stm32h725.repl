@@ -1,0 +1,40 @@
+// Base STM32H725 Renode platform, either run this for a very basic simulation or inherit it in other simulation platform files
+using "platforms/cpus/stm32h7.repl"
+
+nvic:
+    systickFrequency: 550000000
+
+axiSram:
+    size: 0x50000
+
+sram1:
+    size: 0x4000
+
+sram2: @ sysbus 0x30004000
+    size: 0x4000
+
+sram3: @ none
+
+sram4:
+    size: 0x4000
+
+flashBank2: @ none
+
+// Extend the inherited boot shim with CR2.BRRDY. Zephyr's backup SRAM
+// initialization otherwise waits forever for the backup regulator.
+// These fixed ready flags do not model power sequencing or low-power modes.
+pwr:
+    script: '''
+if request.Offset == 0x00: # CR1: reset value + DBP
+    request.Value = 0xF000C100
+elif request.Offset == 0x04: # CSR1: ACTVOSRDY
+    request.Value = 0x6000
+elif request.Offset == 0x08: # CR2: BREN + BRRDY
+    request.Value = 0x10001
+elif request.Offset == 0x0C: # CR3: LDOEN + USB33RDY
+    request.Value = 0x4000002
+elif request.Offset == 0x18: # D3CR: VOSRDY
+    request.Value = 0x2000
+else:
+    self.WarningLog("Unhandled access to offset 0x{0:X}", request.Offset)
+'''

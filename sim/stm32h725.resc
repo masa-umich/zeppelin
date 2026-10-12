@@ -1,0 +1,20 @@
+using sysbus
+$quiet ?= true
+
+mach create "stm32h725-machine"
+machine LoadPlatformDescription $ORIGIN/stm32h725.repl
+
+# Known H7 model limitations; retain errors and warnings from other devices.
+if $quiet "logLevel 3 sysbus.cpu"
+if $quiet "logLevel 3 sysbus.nvic"
+if $quiet "logLevel 3 sysbus.rcc"
+if $quiet "logLevel 3 sysbus.lpuart1"
+# Only silence the unmodeled DBGMCU ID/control registers, not all bus warnings.
+if $quiet "sysbus SilenceRange <0x5C001000 0x8>"
+
+sysbus LoadELF $elf
+sysbus.cpu VectorTableOffset 0x08000000
+
+# Allow uart_connect to attach before the one-time boot output.
+python "from threading import Timer; Timer(1.0, emulationManager.Instance.CurrentEmulation.StartAll).start()"
+uart_connect sysbus.usart3
