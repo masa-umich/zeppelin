@@ -31,5 +31,21 @@
                 "path": "${workspaceFolder}/zeppelin/kestrel-app"
             }
         ],
+        "zephyr-workbench.env.BOARD_ROOT": ["${workspaceFolder}/zeppelin"],
+        "terminal.integrated.env.linux": {
+			"BOARD_ROOT": "${workspaceFolder}/zeppelin"
+		},
+		"terminal.integrated.env.osx": {
+			"BOARD_ROOT": "${workspaceFolder}/zeppelin"
+		},
+		"terminal.integrated.env.windows": {
+			"BOARD_ROOT": "${workspaceFolder}/zeppelin"
+		},
+		"cmake.configureArgs": [
+			"-DBOARD_ROOT=${workspaceFolder}/zeppelin"
+		],
+		"cmake.environment": {
+			"BOARD_ROOT": "${workspaceFolder}/zeppelin"
+		},
 	}
 }
