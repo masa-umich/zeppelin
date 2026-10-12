@@ -1,0 +1,139 @@
+# Incredibly messy justfile module for simplifying the network setup of Renode and making it cross-compatbile
+# NGL ChatGPT wrote 100% of this and I have no idea how to maintain it if it breaks. 
+
+# Renode simulation and host network setup.
+[windows]
+set shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]
+
+# Create/repair TAP-Windows6 and configure the host address (Administrator required).
+[windows]
+[extension: '.ps1']
+[script('powershell.exe', '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File')]
+setup:
+    & {
+        $ErrorActionPreference = 'Stop'
+        $principal = [Security.Principal.WindowsPrincipal]::new(
+            [Security.Principal.WindowsIdentity]::GetCurrent())
+        if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            throw 'Run just sim setup from PowerShell as Administrator.'
+        }
+
+        # Find tapctl in PATH or the usual OpenVPN installation directories.
+        $tapctlCommand = Get-Command tapctl.exe -ErrorAction SilentlyContinue
+        $tapctl = if ($tapctlCommand) { $tapctlCommand.Source } else { $null }
+        if (-not $tapctl) {
+            foreach ($installRoot in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+                if ($installRoot) {
+                    $candidate = Join-Path $installRoot 'OpenVPN\bin\tapctl.exe'
+                    if (Test-Path -LiteralPath $candidate) { $tapctl = $candidate; break }
+                }
+            }
+        }
+        if (-not $tapctl) {
+            throw 'Install OpenVPN Community with TAP-Windows6 and tapctl, or add the directory containing tapctl.exe to PATH.'
+        }
+
+        $tapName = 'renode-tap0'
+        $adapter = Get-NetAdapter | Where-Object Name -EQ $tapName
+        if ($adapter -and $adapter.InterfaceDescription -like 'OpenVPN Data Channel Offload*') {
+            $suffix = 0
+            $existingNames = @(Get-NetAdapter -IncludeHidden | Select-Object -ExpandProperty Name)
+            while ($existingNames -contains "renode-dco$suffix") { $suffix++ }
+            $savedName = "renode-dco$suffix"
+            Rename-NetAdapter -Name $tapName -NewName $savedName
+            Write-Host "Preserved the DCO adapter as $savedName."
+            $adapter = $null
+        }
+        if (-not $adapter) {
+            & $tapctl create --hwid 'root\tap0901' --name $tapName
+            if ($LASTEXITCODE -ne 0) {
+                throw 'TAP creation failed. Repair OpenVPN with TAP-Windows6 enabled, then retry.'
+            }
+            $adapter = Get-NetAdapter -Name $tapName
+        }
+        if ($adapter.InterfaceDescription -notlike 'TAP-Windows Adapter*') {
+            throw "$tapName exists but is not TAP-Windows6. Rename that adapter manually, then retry."
+        }
+        if ($adapter.Status -eq 'Disabled') {
+            Enable-NetAdapter -Name $tapName -Confirm:$false
+        }
+        & netsh interface ipv4 set address "name=$tapName" static 192.168.100.1 255.255.255.0
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to assign the TAP host address.' }
+        Get-NetAdapter -Name $tapName |
+            Format-List Name, InterfaceDescription, Status, InterfaceGuid
+        Write-Host 'TAP ready. From the repository root in this Administrator terminal, run: just sim run osprey-app'
+    }
+
+# Create a persistent TAP owned by the invoking user and configure its host address.
+[linux]
+setup:
+    #!/usr/bin/env sh
+    set -eu
+    if ! command -v ip >/dev/null 2>&1; then
+        echo 'Install iproute2 first (Debian/Ubuntu: sudo apt install iproute2).' >&2
+        exit 1
+    fi
+    if [ ! -c /dev/net/tun ]; then
+        sudo modprobe tun
+    fi
+    if ip link show dev renode-tap0 >/dev/null 2>&1; then
+        if ! ip tuntap show dev renode-tap0 | grep -q ': tap '; then
+            echo 'renode-tap0 exists but is not a TAP interface; rename it manually first.' >&2
+            exit 1
+        fi
+    else
+        sudo ip tuntap add dev renode-tap0 mode tap user "$(id -un)"
+    fi
+    sudo ip addr replace 192.168.100.1/24 dev renode-tap0
+    sudo ip link set dev renode-tap0 up
+    ip addr show dev renode-tap0
+    echo 'TAP ready. Run just sim run osprey-app as this user.'
+
+# Install/start vmnet-helper; leave this terminal running while using Renode.
+[macos]
+setup:
+    #!/usr/bin/env sh
+    set -eu
+    major_version="$(sw_vers -productVersion | cut -d. -f1)"
+    if [ "$major_version" -ge 26 ]; then
+        if ! command -v brew >/dev/null 2>&1; then
+            echo 'Install Homebrew first: https://brew.sh' >&2
+            exit 1
+        fi
+        brew tap nirs/vmnet-helper
+        brew trust nirs/vmnet-helper
+        brew install nirs/vmnet-helper/vmnet-helper
+        helper="$(brew --prefix vmnet-helper)/libexec/vmnet-helper"
+    else
+        helper=/opt/vmnet-helper/bin/vmnet-helper
+        if [ ! -x "$helper" ]; then
+            installer="$(mktemp)"
+            trap 'rm -f "$installer"' EXIT HUP INT TERM
+            curl -fsSL https://github.com/nirs/vmnet-helper/releases/latest/download/install.sh -o "$installer"
+            bash "$installer"
+            rm -f "$installer"
+            trap - EXIT HUP INT TERM
+        fi
+    fi
+    if [ ! -x "$helper" ]; then
+        echo "vmnet-helper executable not found: $helper" >&2
+        exit 1
+    fi
+    echo 'Leave this terminal running; launch just sim run osprey-app in another terminal.'
+    if [ "$major_version" -ge 26 ]; then
+        exec "$helper" --socket /tmp/renode-vmnet.sock --operation-mode host \
+            --start-address 192.168.100.1 --end-address 192.168.100.10 --subnet-mask 255.255.255.0
+    else
+        exec sudo "$helper" --socket /tmp/renode-vmnet.sock --operation-mode host \
+            --start-address 192.168.100.1 --end-address 192.168.100.10 --subnet-mask 255.255.255.0
+    fi
+
+[unix]
+set shell := ["sh", "-cu"]
+
+# Build a target and run it in Renode from the repository root.
+[working-directory: '..']
+[arg("verbose", long, short="v", value="true")]
+run target verbose="false":
+    @just --justfile '{{justfile()}}' build {{target}}
+    renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'

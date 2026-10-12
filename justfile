@@ -2,6 +2,9 @@
 # Mostly exists to not have to activate the python venv by wrapping `uv run`
 set ignore-comments := true
 
+# Renode simulation and platform-specific host networking setup.
+mod sim
+
 # just selects the platform's shell and resolves its executable automatically.
 # Windows uses built-in Windows PowerShell; Git Bash is not required.
 [unix]
@@ -44,11 +47,6 @@ build target:
 # Flash the connected board
 flash target: (build target)
     uv run west flash --build-dir ./{{target}}/build/
-
-# Run a hardware build in Renode
-[arg("verbose", long, short="v", value="true")]
-sim target verbose="false": (build target)
-    renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
 
 # clang-format check of all source files (dryrun)
 [unix]
