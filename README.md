@@ -47,7 +47,7 @@ just flash kestrel-app
 For firmware simulation this repository is setup for Renode which is a specialized simulation environment for embedded systems, sort of like QEMU.
 
 ### Installation
-The installation process for Renode can be somewhat complicated and so is not automated like the rest of this repository. Refer to the [Renode GitHub README installation section](https://github.com/renode/renode/blob/master/README.md#installation) for instructions.
+Unfortunately there is no cross-platform installation script for Renode, so you'll need to refer to the [Renode GitHub README installation section](https://github.com/renode/renode/blob/master/README.md#installation) for instructions.
 
 ### Running the Simulation
 To run a full firmware simulation of an app using Renode, a just command has been made to automate the process:

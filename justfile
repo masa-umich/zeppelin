@@ -39,23 +39,15 @@ update:
 # Build a target
 build target:
     @echo "{{BLUE}}Building{{NORMAL}} {{target}}..."
-    uv run west build {{target}} --pristine always --build-dir ./{{target}}/build/
+    uv run west build {{target}} --pristine auto --build-dir ./{{target}}/build/
 
 # Flash the connected board
-flash target:
+flash target: (build target)
     uv run west flash --build-dir ./{{target}}/build/
 
-# Run a hardware build in Renode (defaults to osprey-app)
-[unix]
+# Run a hardware build in Renode
 [arg("verbose", long, short="v", value="true")]
-sim target verbose="false":
-    @command -v renode >/dev/null 2>&1 || { echo "Renode is not installed or is not on PATH. Install it from https://renode.io/#downloads" >&2; exit 1; }
-    renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
-
-[windows]
-[arg("verbose", long, short="v", value="true")]
-sim target verbose="false":
-    @if (-not (Get-Command renode -ErrorAction SilentlyContinue)) { Write-Error "Renode is not installed or is not on PATH. Install it from https://renode.io/#downloads"; exit 1 }
+sim target verbose="false": (build target)
     renode --disable-gui --console -e '$quiet={{ if verbose == "true" {"false"} else {"true"} }}; $elf=@{{target}}/build/zephyr/zephyr.elf; include @sim/stm32h725.resc'
 
 # clang-format check of all source files (dryrun)
