@@ -1,5 +1,8 @@
 using sysbus
 $quiet ?= true
+$network ?= true
+$tapName ?= "renode-tap0"
+$vmnetSocket ?= "/tmp/renode-vmnet.sock"
 
 mach create "stm32h725-machine"
 machine LoadPlatformDescription $ORIGIN/stm32h725.repl
@@ -14,6 +17,10 @@ if $quiet "sysbus SilenceRange <0x5C001000 0x8>"
 
 sysbus LoadELF $elf
 sysbus.cpu VectorTableOffset 0x08000000
+
+# Select the host bridge automatically; host installation/configuration is manual.
+include $ORIGIN/network.py
+if $network "setup_network $tapName $vmnetSocket"
 
 # Allow uart_connect to attach before the one-time boot output.
 python "from threading import Timer; Timer(1.0, emulationManager.Instance.CurrentEmulation.StartAll).start()"
