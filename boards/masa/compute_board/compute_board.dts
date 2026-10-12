@@ -1,0 +1,313 @@
+/dts-v1/;
+#include <st/h7/stm32h725Xg.dtsi>
+#include <st/h7/stm32h725zgtx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+
+/ {
+	model = "MASA Avionics Compute Board";
+	compatible = "masa,compute-board";
+
+	chosen {
+		zephyr,dtcm = &dtcm;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		red_pwm_led: red_pwm_led {
+			pwms = <&pwm3 3 PWM_HZ(100) PWM_POLARITY_NORMAL>;
+			label = "Status LED - Red";
+		};
+
+		green_pwm_led: green_pwm_led {
+			pwms = <&pwm3 2 PWM_HZ(100) PWM_POLARITY_NORMAL>;
+			label = "Status LED - Green";
+		};
+
+		blue_pwm_led: blue_pwm_led {
+			pwms = <&pwm3 1 PWM_HZ(100) PWM_POLARITY_NORMAL>;
+			label = "Status LED - Blue";
+		};
+	};
+
+	gpios {
+		eth_phy_nrst: gpio_pe3 {
+			gpios = <&gpioe 3 GPIO_ACTIVE_LOW>;
+			label = "Ethernet PHY Reset Pin";
+		};
+
+		eeprom_wc: pa15 {
+			gpios = <&gpioa 15 GPIO_ACTIVE_HIGH>;
+			label = "EEPROM Write Control Pin";
+		};
+	};
+
+	zephyr,user {
+        io-channels = <&adc1 2>, <&adc1 10>;
+		io-channel-names = "PSENSE_V", "PSENSE_I";
+    };
+
+	aliases {
+		red-led   = &red_pwm_led;
+		green-led = &green_pwm_led;
+		blue-led  = &blue_pwm_led;
+		eth-rst   = &eth_phy_nrst;
+		eeprom-wc = &eeprom_wc;
+        };
+};
+
+&timers3 {
+	st,prescaler = <1000>;
+	status = "okay";
+
+	pwm3: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim3_ch1_pc6 &tim3_ch2_pc7 &tim3_ch3_pc8>;
+		pinctrl-names = "default";
+	};
+};
+
+
+// Clock config mostly based on what worked for Limelight hardware
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi48 {
+	status = "okay";
+};
+
+&clk_hse {
+	clock-frequency = <DT_FREQ_M(48)>; /* STLink 8MHz clock */
+	status = "okay";
+};
+
+&clk_lse {
+	status = "okay";
+};
+
+&pll {
+	div-m = <6>;
+	mul-n = <60>;
+	div-p = <1>; // 480 MHz
+	div-q = <2>; // 240 MHz
+	div-r = <2>; // 240 MHz
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&pll2 {
+	div-m = <6>;
+	mul-n = <60>;
+	div-p = <2>; // 240 MHz
+	div-q = <2>; // 240 MHz
+	div-r = <2>; // 240 MHz
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&pll3 {
+	div-m = <8>;
+	mul-n = <129>;
+	div-p = <2>; // 240 MHz
+	div-q = <2>; // 240 MHz
+	div-r = <2>; // 240 MHz
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(480)>;
+	d1cpre = <1>;
+	hpre = <2>;    /* HCLK: 240 MHz */
+	d1ppre = <2>;  /* APB1: 120 MHz */
+	d2ppre1 = <2>; /* APB2: 120 MHz */
+	d2ppre2 = <2>; /* APB3: 120 MHz */
+	d3ppre = <2>;  /* APB4: 120 MHz */
+};
+
+&rtc {
+	clocks = <&rcc STM32_CLOCK(APB4, 16)>,
+		<&rcc STM32_SRC_LSE RTC_SEL(1)>;
+	status = "okay";
+};
+
+&pwr {
+	power-supply = "ldo";
+};
+
+&backup_sram {
+	status = "okay";
+};
+
+&spi1 {
+	status = "okay";
+	pinctrl-0 = <&spi1_sck_pa5 &spi1_miso_pg9 &spi1_mosi_pd7>;
+	pinctrl-names = "default";
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_sck_pa9 &spi2_miso_pc2_c &spi2_mosi_pc3_c>;
+	pinctrl-names = "default";
+};
+
+&spi3 {
+	status = "okay";
+	pinctrl-0 = <&spi3_sck_pb3 &spi3_miso_pb4 &spi3_mosi_pb2>;
+	pinctrl-names = "default";
+};
+
+&spi4 {
+	status = "okay";
+	pinctrl-0 = <&spi4_sck_pe2 &spi4_miso_pe5 &spi4_mosi_pe6>;
+	pinctrl-names = "default";
+};
+
+&spi5 {
+	status = "okay";
+	pinctrl-0 = <&spi5_sck_pf7 &spi5_miso_pf8 &spi5_mosi_pf9>;
+	pinctrl-names = "default";
+};
+
+&spi6 {
+	status = "okay";
+	pinctrl-0 = <&spi6_sck_pg13 &spi6_miso_pa6 &spi6_mosi_pg14>;
+	pinctrl-names = "default";
+};
+
+&uart4 {
+	pinctrl-0 = <&uart4_tx_pa12 &uart4_rx_pa11>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&uart7 {
+	pinctrl-0 = <&uart7_tx_pe8 &uart7_rx_pe7>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&uart8 {
+	pinctrl-0 = <&uart8_tx_pe1 &uart8_rx_pe0>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&uart9 {
+	pinctrl-0 = <&uart9_tx_pd15 &uart9_rx_pd14>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb7>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+// EEPROM and temp sensor
+&i2c2 {
+	pinctrl-0 = <&i2c2_scl_pb10 &i2c2_sda_pb11>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&i2c3 {
+	pinctrl-0 = <&i2c3_scl_pa8 &i2c3_sda_pc9>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&i2c4 {
+	pinctrl-0 = <&i2c4_scl_pf14 &i2c4_sda_pf15>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+// Zephyr doesn't have support for i2c5 for some reason, you can add it manually if it's required
+/*&i2c5 {
+	pinctrl-0 = <&i2c5_scl_pc11 &i2c5_sda_pc10>;
+	pinctrl-names = "default";
+	status = "okay";
+};*/
+
+&mac {
+	status = "okay";
+	pinctrl-0 = <&eth_ref_clk_pa1
+			&eth_crs_dv_pa7
+			&eth_rxd0_pc4
+			&eth_rxd1_pc5
+			&eth_tx_en_pg11
+			&eth_txd0_pb12
+			&eth_txd1_pg12>;
+	pinctrl-names = "default";
+	phy-connection-type = "rmii";
+	phy-handle = <&eth_phy>;
+};
+
+&mdio {
+	status = "okay";
+	pinctrl-0 = <&eth_mdio_pa2 &eth_mdc_pc1>;
+	pinctrl-names = "default";
+
+	eth_phy: ethernet-phy@0 {
+		compatible = "ethernet-phy";
+		reg = <0>;
+	};
+};
+
+// Set up Ethernet PHY reset pin to be high on startup
+&gpioe {
+	eth_phy_rst_hog {
+		gpio-hog;
+		gpios = <3 GPIO_ACTIVE_LOW>;
+		output-low;
+	};
+};
+
+&quadspi {
+	status = "okay";
+
+	pinctrl-0 = <&octospim_p1_clk_pf10
+                &octospim_p1_ncs_pe11
+                &octospim_p1_io0_pb1
+                &octospim_p1_io1_pb0
+                &octospim_p1_io2_pa3
+                &octospim_p1_io3_pf6>;
+	pinctrl-names = "default";
+};
+
+&adc1 {
+	status = "okay";
+
+	pinctrl-0 = <&adc1_inp10_pc0 &adc1_inp2_pf11>;
+	pinctrl-names = "default";
+	st,adc-clock-source = "SYNC";
+	st,adc-prescaler = <64>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@a {
+		reg = <10>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};

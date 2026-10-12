@@ -1,0 +1,6 @@
+board:
+  name: compute_board
+  full_name: MASA Compute Board
+  vendor: masa
+  socs:
+    - name: stm32h725xx
