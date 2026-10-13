@@ -1,8 +1,18 @@
-[working-directory: '..']
-build target:
-    uv run west build {{target}} --pristine always --build-dir ../{{target}}/build/ -- -DOVERLAY_CONFIG="../sim/native_sim.conf"
+set no-cd
 
-# Build a target and run it in Renode from the repository root.
-[working-directory: '..']
+# Runs the zephyr build container and mounts the Zephyr workspace.
+container:
+    podman run --rm -it \
+        --userns=keep-id \
+        --entrypoint /bin/bash \
+        -v "$(cd .. && pwd):/workdir:Z" \
+        -w /workdir/zeppelin \
+        -e ZEPHYR_BASE=/workdir/zephyr \
+        -e ZEPHYR_TOOLCHAIN_VARIANT=host \
+        ghcr.io/zephyrproject-rtos/zephyr-build:main
+
+build target:
+    uv run west build {{target}} --pristine always --build-dir ../{{target}}/build/ -- -DOVERLAY_CONFIG="../sim/native_sim/native_sim.conf"
+
 run target: (build target)
     ../{{target}}/build/zephyr/zephyr.exe
