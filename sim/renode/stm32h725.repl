@@ -20,6 +20,17 @@ sram4:
 
 flashBank2: @ none
 
+// The Nucleo H723 firmware uses an MDIO PHY at address 0. The inherited
+// STM32H7 platform supplies only the MAC. Model an always-connected
+// 10/100 PHY; these fixed registers do not simulate cable negotiation.
+phy0: Network.EthernetPhysicalLayer @ ethernet 0
+    Id1: 0x0007
+    Id2: 0xC130
+    BasicControl: 0x3100
+    BasicStatus: 0x782D
+    AutoNegotiationAdvertisement: 0x01E1
+    AutoNegotiationLinkPartnerBasePageAbility: 0x01E1
+
 // Extend the inherited boot shim with CR2.BRRDY. Zephyr's backup SRAM
 // initialization otherwise waits forever for the backup regulator.
 // These fixed ready flags do not model power sequencing or low-power modes.
