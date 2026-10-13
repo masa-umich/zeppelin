@@ -1,18 +1,29 @@
+# no-cd ensures that all of these commands get executed from the directory where `just` is called.
 set no-cd
 
-# Runs the zephyr build container and mounts the Zephyr workspace.
-container:
-    podman run --rm -it \
+workspace := canonicalize(source_directory() / '../..')
+
+# Run a quoted shell command in the container
+container command:
+    podman run --rm -i \
         --userns=keep-id \
         --entrypoint /bin/bash \
-        -v "$(cd .. && pwd):/workdir:Z" \
+        -v {{quote(workspace + ':/workdir:Z')}} \
         -w /workdir/zeppelin \
         -e ZEPHYR_BASE=/workdir/zephyr \
         -e ZEPHYR_TOOLCHAIN_VARIANT=host \
-        ghcr.io/zephyrproject-rtos/zephyr-build:main
+        -e GIT_CONFIG_COUNT=1 \
+        -e GIT_CONFIG_KEY_0=safe.directory \
+        -e 'GIT_CONFIG_VALUE_0=*' \
+        ghcr.io/zephyrproject-rtos/zephyr-build:main \
+        -c {{quote(command)}}
 
 build target:
-    uv run west build {{target}} --pristine always --build-dir ../{{target}}/build/ -- -DOVERLAY_CONFIG="../sim/native_sim/native_sim.conf"
+    just sim container 'west build {{target}} \
+        --pristine always \
+        --build-dir ./{{target}}/build/native_sim/ \
+        -b native_sim/native/64 \
+        -- -DEXTRA_CONF_FILE=/workdir/zeppelin/sim/native_sim/native_sim.conf'
 
 run target: (build target)
-    ../{{target}}/build/zephyr/zephyr.exe
+    just sim container './{{target}}/build/native_sim/zephyr/zephyr.exe'
