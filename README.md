@@ -44,89 +44,17 @@ just flash kestrel-app
 3. If relevant, use your favorite serial terminal to connect to the board. (just command alias comming soon)
 
 ## Simulation
-For firmware simulation this repository is setup for Renode which is a specialized simulation environment for embedded systems, sort of like QEMU.
+tbd
 
 ### Installation
-Renode installation is unfortunately not cross-platform and a bit of a hassle, so we provide platform-specific instructions below.
-
-<details>
-    <summary>macOS</summary>
-
-Install [Homebrew](https://brew.sh) if you haven't already, then run:
-
-```bash
-brew tap renode/tap
-brew trust renode/tap
-brew install renode/tap/renode
-renode --version
-```
-
-From the repository root:
-
-```bash
-just sim setup
-```
-
-Leave this terminal running. Once the helper is ready, run in a second terminal:
-
-```bash
-just sim run osprey-app
-```
-
-On macOS 15 or earlier, setup uses the upstream installer and `sudo` instead
-of Homebrew for `vmnet-helper`. Use helper v0.12.0 or later. Restart setup for
-each simulation.
-
-</details>
-
-<details>
-    <summary>Windows</summary>
-
-1. Install [Renode](https://builds.renode.io/renode-latest.setup.exe) and enable its PATH option.
-2. Install [OpenVPN Community](https://openvpn.net/community-downloads/) with **TAP-Windows6** and **tapctl.exe**.
-3. Reopen **PowerShell as Administrator**, navigate to the repository root, and run:
-
-```sh
-renode --version
-just sim setup
-just sim run osprey-app
-```
-
-</details>
-
-<details>
-    <summary>Linux</summary>
-
-On Debian/Ubuntu:
-
-```bash
-curl -fLO https://builds.renode.io/renode-latest.deb
-sudo apt update
-sudo apt install ./renode-latest.deb iproute2
-renode --version
-```
-
-For other distributions, install the matching [Renode package](https://builds.renode.io/)
-and `iproute2`.
-
-From the repository root, run as your normal user (setup invokes `sudo`):
-
-```bash
-just sim setup
-just sim run osprey-app
-```
-
-Rerun setup after rebooting. Containers/WSL require separate TUN/TAP device
-and permission configuration.
-
-</details>
+podman tbd
 
 ### Running the Simulation
-To run a full firmware simulation of an app using Renode, a just command has been made to automate the process:
+tbd
 ```bash
+just sim build <target>
 just sim run <target>
 ```
-By default this supresses most non-critical warnings and errors, but if you want that to be printed run the same command with the `-v` or `--verbose` flag.
 
 ## Troubleshooting
 

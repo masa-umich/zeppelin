@@ -1,12 +1,18 @@
 # no-cd ensures that all of these commands get executed from the directory where `just` is called.
 set no-cd
 
+# Allowed port mappings for the container, 4840 is the default for OPC-UA/open62541
+# Port ranges can be allowed like this: '--publish 127.0.0.1:4840-4850:4840-4850/tcp'
+# And UDP can be allowed by using a separate publish flag: '--publish 127.0.0.1:4840:4840/udp'
+port_mappings := '--publish 127.0.0.1:4840:4840/tcp'
+
 workspace := canonicalize(source_directory() / '../..')
 
 # Run a quoted shell command in the container
 container command:
     podman run --rm -i \
         --userns=keep-id \
+        {{port_mappings}} \
         --entrypoint /bin/bash \
         -v {{quote(workspace + ':/workdir:Z')}} \
         -w /workdir/zeppelin \
@@ -18,6 +24,7 @@ container command:
         ghcr.io/zephyrproject-rtos/zephyr-build:main \
         -c {{quote(command)}}
 
+# Build the simulation for a given target
 build target:
     just sim container 'west build {{target}} \
         --pristine always \
@@ -25,5 +32,6 @@ build target:
         -b native_sim/native/64 \
         -- -DEXTRA_CONF_FILE=/workdir/zeppelin/sim/native_sim/native_sim.conf'
 
+# Run the simulation for a given target
 run target: (build target)
     just sim container './{{target}}/build/native_sim/zephyr/zephyr.exe'
