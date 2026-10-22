@@ -47,6 +47,7 @@ just flash kestrel-app
 Simulation is currently handled by using the `native_sim` target inside of a [podman container](https://podman.io/). The reason this cannot be done natively is because `native_sim` requires a Linux machine to run on which is obviously not cross platform. Podman also allows more deterministic builds and network bridging.
 
 ### Installation
+Simulation installation depends on your opperating system. The only dependency is Podman, everything else will be automatically downloaded as part of the container. You also must have already initialized the Zephyr workspace for this to work as it relies on mounting your existing directory.
 
 <details>
     <summary>Windows</summary>
