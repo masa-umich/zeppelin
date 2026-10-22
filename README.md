@@ -44,7 +44,7 @@ just flash kestrel-app
 3. If relevant, use your favorite serial terminal to connect to the board. (just command alias comming soon)
 
 ## Simulation
-Simulation is currently handled by using the `native_sim` target inside of a podman container. The reason this cannot be done natively is because `native_sim` requires a Linux machine to run on which is obviously not cross platform. Podman also allows more deterministic builds and network bridging.
+Simulation is currently handled by using the `native_sim` target inside of a [podman container](https://podman.io/). The reason this cannot be done natively is because `native_sim` requires a Linux machine to run on which is obviously not cross platform. Podman also allows more deterministic builds and network bridging.
 
 ### Installation
 
