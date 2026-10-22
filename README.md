@@ -44,16 +44,69 @@ just flash kestrel-app
 3. If relevant, use your favorite serial terminal to connect to the board. (just command alias comming soon)
 
 ## Simulation
-tbd
+Simulation is currently handled by using the `native_sim` target inside of a podman container. The reason this cannot be done natively is because `native_sim` requires a Linux machine to run on which is obviously not cross platform. Podman also allows more deterministic builds and network bridging.
 
 ### Installation
-podman tbd
+
+<details>
+    <summary>Windows</summary>
+
+Run in Administrator PowerShell, then restart Windows if prompted:
+
+```powershell
+wsl --install --no-distribution
+winget install --exact --id Podman.CLI
+```
+
+Open a new PowerShell terminal:
+
+```powershell
+podman machine init
+podman machine start
+podman run --rm docker.io/library/hello-world
+```
+
+</details>
+
+<details>
+    <summary>macOS</summary>
+
+With [Homebrew](https://brew.sh) installed:
+
+```bash
+brew install podman
+podman machine init
+podman machine start
+podman run --rm docker.io/library/hello-world
+```
+
+</details>
+
+<details>
+    <summary>Linux</summary>
+
+On Debian/Ubuntu (other distributions: [Podman installation](https://podman.io/docs/installation)):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y podman
+podman run --rm docker.io/library/hello-world
+```
+
+</details>
+
+On macOS and Windows, run `podman machine start` after rebooting; `podman machine init` is only needed once.
 
 ### Running the Simulation
-tbd
+Running a simulation should be as easy as this:
 ```bash
 just sim build <target>
 just sim run <target>
+```
+
+In the rare event where you need to run something inside the Podman container manually, you can also run generic commands inside the container like this:
+```bash
+just sim container '<command>'
 ```
 
 ## Troubleshooting
