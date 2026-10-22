@@ -44,52 +44,41 @@ just flash kestrel-app
 3. If relevant, use your favorite serial terminal to connect to the board. (just command alias comming soon)
 
 ## Simulation
-For firmware simulation this repository is setup for Renode which is a specialized simulation environment for embedded systems, sort of like QEMU.
+Simulation is currently handled by using the `native_sim` target inside of a [podman container](https://podman.io/). The reason this cannot be done natively is because `native_sim` requires a Linux machine to run on which is obviously not cross platform. Podman also allows more deterministic builds and network bridging.
 
 ### Installation
-Renode installation is unfortunately not cross-platform and a bit of a hassle, so we provide platform-specific instructions below.
-
-<details>
-    <summary>macOS</summary>
-
-Install [Homebrew](https://brew.sh) if you haven't already, then run:
-
-```bash
-brew tap renode/tap
-brew trust renode/tap
-brew install renode/tap/renode
-renode --version
-```
-
-From the repository root:
-
-```bash
-just sim setup
-```
-
-Leave this terminal running. Once the helper is ready, run in a second terminal:
-
-```bash
-just sim run osprey-app
-```
-
-On macOS 15 or earlier, setup uses the upstream installer and `sudo` instead
-of Homebrew for `vmnet-helper`. Use helper v0.12.0 or later. Restart setup for
-each simulation.
-
-</details>
+Simulation installation depends on your opperating system. The only dependency is Podman, everything else will be automatically downloaded as part of the container. You also must have already initialized the Zephyr workspace for this to work as it relies on mounting your existing directory.
 
 <details>
     <summary>Windows</summary>
 
-1. Install [Renode](https://builds.renode.io/renode-latest.setup.exe) and enable its PATH option.
-2. Install [OpenVPN Community](https://openvpn.net/community-downloads/) with **TAP-Windows6** and **tapctl.exe**.
-3. Reopen **PowerShell as Administrator**, navigate to the repository root, and run:
+Run in Administrator PowerShell, then restart Windows if prompted:
 
-```sh
-renode --version
-just sim setup
-just sim run osprey-app
+```powershell
+wsl --install --no-distribution
+winget install --exact --id Podman.CLI
+```
+
+Open a new PowerShell terminal:
+
+```powershell
+podman machine init
+podman machine start
+podman run --rm docker.io/library/hello-world
+```
+
+</details>
+
+<details>
+    <summary>macOS</summary>
+
+With [Homebrew](https://brew.sh) installed:
+
+```bash
+brew install podman
+podman machine init
+podman machine start
+podman run --rm docker.io/library/hello-world
 ```
 
 </details>
@@ -97,36 +86,29 @@ just sim run osprey-app
 <details>
     <summary>Linux</summary>
 
-On Debian/Ubuntu:
+On Debian/Ubuntu (other distributions: [Podman installation](https://podman.io/docs/installation)):
 
 ```bash
-curl -fLO https://builds.renode.io/renode-latest.deb
-sudo apt update
-sudo apt install ./renode-latest.deb iproute2
-renode --version
+sudo apt-get update
+sudo apt-get install -y podman
+podman run --rm docker.io/library/hello-world
 ```
-
-For other distributions, install the matching [Renode package](https://builds.renode.io/)
-and `iproute2`.
-
-From the repository root, run as your normal user (setup invokes `sudo`):
-
-```bash
-just sim setup
-just sim run osprey-app
-```
-
-Rerun setup after rebooting. Containers/WSL require separate TUN/TAP device
-and permission configuration.
 
 </details>
 
+On macOS and Windows, run `podman machine start` after rebooting; `podman machine init` is only needed once.
+
 ### Running the Simulation
-To run a full firmware simulation of an app using Renode, a just command has been made to automate the process:
+Running a simulation should be as easy as this:
 ```bash
+just sim build <target>
 just sim run <target>
 ```
-By default this supresses most non-critical warnings and errors, but if you want that to be printed run the same command with the `-v` or `--verbose` flag.
+
+In the rare event where you need to run something inside the Podman container manually, you can also run generic commands inside the container like this:
+```bash
+just sim container '<command>'
+```
 
 ## Troubleshooting
 
