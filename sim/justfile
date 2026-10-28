@@ -10,6 +10,7 @@ workspace := canonicalize(source_directory() / '../..')
 
 # Run a quoted shell command in the container
 container command:
+    -podman machine start
     podman run --rm -i \
         --userns=keep-id \
         {{port_mappings}} \
