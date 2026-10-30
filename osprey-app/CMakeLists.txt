@@ -9,6 +9,7 @@ list(APPEND EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_SOURCE_DIR}/../helium-lib")
 # Zephyr builds the library later, using the target's toolchain and
 # configuration.
 include(FetchContent)
+set(UA_LOGLEVEL 400 CACHE STRING "open62541 warning and error logging")
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
