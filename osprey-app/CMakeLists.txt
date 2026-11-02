@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.20.0)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(BOARD nucleo_h723zg) # default board
 
-# Pull in the sibling helium-lib as an out-of-tree Zephyr module
-list(APPEND EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_SOURCE_DIR}/../helium-lib")
-
 # Fetch the sources before Zephyr discovers modules and their Kconfig options.
 # Zephyr builds the library later, using the target's toolchain and
 # configuration.
@@ -15,9 +12,9 @@ if(POLICY CMP0135)
 endif()
 
 FetchContent_Declare(open62541
-    URL https://codeload.github.com/open62541/open62541/tar.gz/refs/tags/v1.5.8
+    URL https://codeload.github.com/open62541/open62541/tar.gz/refs/tags/v1.5.10
     URL_HASH
-        SHA256=cf7951baf253c0537b3397e4ce3ff13930542abcb6ffc3b9cb082af88f95c300
+        SHA256=b05e47734e2e39c0b00511ed6dc22e71f1b5bf7864b86280653a5128d171c0ed
     # This directory has no CMakeLists.txt, so MakeAvailable only downloads it.
     SOURCE_SUBDIR arch/zephyr
 )

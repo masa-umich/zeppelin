@@ -1,5 +1,6 @@
 #include "server.h"
 
+#include <open62541/plugin/eventloop.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 
@@ -20,6 +21,11 @@ static UA_Boolean button_toggle;
 static int button_candidate;
 static int button_stable;
 static int64_t button_changed_at;
+
+/* Supply the EventLoop's monotonic clock in OPC UA's 100 ns units. */
+static UA_DateTime monotonic_time(UA_EventLoop* event_loop) {
+    return (UA_DateTime)(k_ticks_to_ns_floor64(k_uptime_ticks()) / 100);
+}
 
 static UA_StatusCode read_channel(UA_Server* server, const UA_NodeId* session_id,
                                   void* session_context, const UA_NodeId* node_id,
@@ -99,6 +105,16 @@ static UA_StatusCode add_channel(UA_Server* server, char* name,
         UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE), attr, source, led, NULL);
 }
 
+static UA_StatusCode add_channels(UA_Server* server) {
+    for (size_t i = 0; i < ARRAY_SIZE(leds); ++i) {
+        UA_StatusCode status = add_channel(server, leds[i].name, &leds[i]);
+        if (status != UA_STATUSCODE_GOOD) return status;
+    }
+    UA_StatusCode status = add_channel(server, "button.toggle", NULL);
+    if (status != UA_STATUSCODE_GOOD) return status;
+    return UA_Server_addRepeatedCallback(server, sample_button, NULL, 10, NULL);
+}
+
 UA_StatusCode server_init(void) {
     for (size_t i = 0; i < ARRAY_SIZE(leds); ++i) {
         if (!gpio_is_ready_dt(&leds[i].gpio) ||
@@ -126,27 +142,22 @@ UA_StatusCode server_init(void) {
     }
     config.tcpMaxMsgSize = 8192;
     config.tcpMaxChunks = 1;
-    config.maxSecureChannels = 1;
-    config.maxSessions = 1;
+    /* Allow six independent clients to remain connected together. */
+    config.maxSecureChannels = 6;
+    config.maxSessions = 6;
     config.maxNodesPerRead = 4;
     config.maxNodesPerWrite = 3;
+    // Needed because the default time source uses different units
+    config.eventLoop->dateTime_nowMonotonic = monotonic_time;
     UA_Server* server = UA_Server_newWithConfig(&config);
     if (server == NULL) return UA_STATUSCODE_BADOUTOFMEMORY;
 
-    for (size_t i = 0; i < ARRAY_SIZE(leds); ++i) {
-        status = add_channel(server, leds[i].name, &leds[i]);
-        if (status != UA_STATUSCODE_GOOD) goto cleanup;
+    status = add_channels(server);
+    if (status == UA_STATUSCODE_GOOD) {
+        LOG_INF("OPC UA ready: led.green, led.yellow, led.red, button.toggle (ns=1)");
+        volatile UA_Boolean running = true;
+        status = UA_Server_run(server, &running);
     }
-    status = add_channel(server, "button.toggle", NULL);
-    if (status != UA_STATUSCODE_GOOD) goto cleanup;
-    status = UA_Server_addRepeatedCallback(server, sample_button, NULL, 10, NULL);
-    if (status != UA_STATUSCODE_GOOD) goto cleanup;
-
-    LOG_INF("OPC UA ready: led.green, led.yellow, led.red, button.toggle (ns=1)");
-    volatile UA_Boolean running = true;
-    status = UA_Server_run(server, &running);
-
-cleanup:
     UA_Server_delete(server);
     return status;
 }
