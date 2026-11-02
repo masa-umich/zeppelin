@@ -10,7 +10,7 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: v4.4.0
+      revision: v4.5.0
       import:
         # Try to keep this to only modules that are actually used
         # by the project to reduce the size of the workspace directory
