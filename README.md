@@ -163,3 +163,9 @@ git rebase-push
 ```
 The only caveat with doing things this way is that it can have merge conflicts if the changes from main interfere with changes you've made on your branch, in which case I reccomend getting an LLM to help you fix the situation.
 </details>
+
+<details>
+    <summary>Flashing ST-Link on MacOS fails</summary>
+
+Flashing certain ST-Links on MacOS can throw an error even after you have the STM programmer installed correctly. This has something to do with how direct USB connections are handled on Apple hardware, I'm not sure about the specifics. The only known workaround is to use a USB hub or adapter, so: `Mac -> USB hub -> USB-to-Micro -> ST-Link -> Board`. If you use a direct USB-C to Micro-USB cable without a USB hub it will probably fail even if the board appears to show up.
+</details>
