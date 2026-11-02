@@ -3,6 +3,15 @@
 Reference OPC UA firmware for other MASA boards, tested with Zephyr 4.4.0,
 open62541 1.5.10, and the NUCLEO-H723ZG.
 
+## Simulation
+
+This project has simulation support, though since it's built for GPIO interaction you can only really verify networking parts. Run the sim with:
+```bash
+just sim run osprey-app
+```
+
+Then in Synnax you'll want to target `opc.tcp://127.0.0.1:4840` (the default `localhost` doesn't work for some reason). 
+
 ## Build and connect
 
 Complete the [workspace setup](../README.md#setup), then run from the repository root:
