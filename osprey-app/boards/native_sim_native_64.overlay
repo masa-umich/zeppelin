@@ -1,0 +1,26 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+    aliases {
+        led1 = &sim_led1;
+        led2 = &sim_led2;
+        sw0 = &sim_button;
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        sim_button: button_0 {
+            gpios = <&gpio0 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+        };
+    };
+};
+
+&leds {
+    sim_led1: led_1 {
+        gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+    };
+
+    sim_led2: led_2 {
+        gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+    };
+};
