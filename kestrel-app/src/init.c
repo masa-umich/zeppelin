@@ -4,8 +4,8 @@
 
 #include "init.h"
 
-#include <helium/time.h>
 #include <helium/net_init.h>
+#include <helium/time.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
