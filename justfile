@@ -48,6 +48,10 @@ build target:
 flash target: (build target)
     uv run west flash --build-dir ./{{target}}/build/
 
+# Deletes `build` and `.cache` directories
+clean directory="":
+    uv run scripts/clean.py {{directory}}
+
 # clang-format check of all source files (dryrun)
 [unix]
 check:
