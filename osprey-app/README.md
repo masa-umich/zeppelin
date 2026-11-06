@@ -1,6 +1,6 @@
 # Osprey
 
-Reference OPC UA firmware for other MASA boards, tested with Zephyr 4.4.0,
+Reference OPC UA firmware for other MASA boards, tested with Zephyr 4.5.0,
 open62541 1.5.10, and the NUCLEO-H723ZG.
 
 ## Simulation

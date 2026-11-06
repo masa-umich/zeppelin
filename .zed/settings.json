@@ -1,5 +1,12 @@
 {
   "lsp": {
+    "cmake": {
+      "initialization_options": {
+        "lint": {
+          "enable": false
+        }
+      }
+    },
     "clangd": {
       "binary": {
         "arguments": [

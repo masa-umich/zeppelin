@@ -1,6 +1,10 @@
 # no-cd ensures that all of these commands get executed from the directory where `just` is called.
 set no-cd
 
+# Windows compat
+[windows]
+set shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]
+
 # Allowed port mappings for the container, 4840 is the default for OPC-UA/open62541
 # Port ranges can be allowed like this: '--publish 127.0.0.1:4840-4850:4840-4850/tcp'
 # And UDP can be allowed by using a separate publish flag: '--publish 127.0.0.1:4840:4840/udp'
@@ -28,7 +32,7 @@ container command:
 # Build the simulation for a given target
 build target:
     just sim container 'west build {{target}} \
-        --pristine always \
+        --pristine auto \
         --build-dir ./{{target}}/build/native_sim/ \
         -b native_sim/native/64 \
         -- -DEXTRA_CONF_FILE=/workdir/zeppelin/sim/native_sim/native_sim.conf'
