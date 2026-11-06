@@ -32,7 +32,7 @@ container command:
 # Build the simulation for a given target
 build target:
     just sim container 'west build {{target}} \
-        --pristine always \
+        --pristine auto \
         --build-dir ./{{target}}/build/native_sim/ \
         -b native_sim/native/64 \
         -- -DEXTRA_CONF_FILE=/workdir/zeppelin/sim/native_sim/native_sim.conf'
