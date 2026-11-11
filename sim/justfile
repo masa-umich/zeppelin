@@ -26,7 +26,7 @@ container command:
         -e GIT_CONFIG_COUNT=1 \
         -e GIT_CONFIG_KEY_0=safe.directory \
         -e 'GIT_CONFIG_VALUE_0=*' \
-        ghcr.io/zephyrproject-rtos/zephyr-build:main \
+        ghcr.io/zephyrproject-rtos/ci-base:main \
         -c {{quote(command)}}
 
 # Build the simulation for a given target
