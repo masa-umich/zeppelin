@@ -3,11 +3,12 @@ name: Build
 on:
   push:
     branches: [main]
+  pull_request:
   schedule:
     - cron: "0 0 * * *"
-  # Other branches are not built automatically. To test build one, run this
-  # workflow manually and pick the branch: Actions > Build > Run workflow, or
-  # `gh workflow run build.yaml --ref <branch>`.
+  # Branches without a PR are not built automatically. To test build one, run
+  # this workflow manually and pick the branch: Actions > Build > Run workflow,
+  # or `gh workflow run build.yaml --ref <branch>`.
   workflow_dispatch:
 
 permissions:
@@ -105,6 +106,17 @@ jobs:
           name: ${{ matrix.app }}
           path: zeppelin/firmware/
           if-no-files-found: error
+
+  # Single check that passes only if every app built. Require this one in the
+  # branch protection for main so the rule doesn't change with the app matrix.
+  build-status:
+    name: All builds
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build results
+        run: test "${{ needs.build.result }}" = "success"
 
   # Optional: publish a firmware release for each app when a PR is merged to
   # main. Enable it by setting the repository variable AUTO_RELEASE to "true"
