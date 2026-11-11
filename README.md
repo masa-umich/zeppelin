@@ -169,3 +169,9 @@ The only caveat with doing things this way is that it can have merge conflicts i
 
 Flashing certain ST-Links on MacOS can throw an error even after you have the STM programmer installed correctly. This has something to do with how direct USB connections are handled on Apple hardware, I'm not sure about the specifics. The only known workaround is to use a USB hub or adapter, so: `Mac -> USB hub -> USB-to-Micro -> ST-Link -> Board`. If you use a direct USB-C to Micro-USB cable without a USB hub it will probably fail even if the board appears to show up.
 </details>
+
+<details>
+    <summary>Building on Windows takes multiple minutes</summary>
+
+CMake is generally just slower on Windows for a variety of reasons, but the biggest contributer to this is the Windows real-time anti-virus threat-detection. When CMake is making all of it's build files (generally many hundreds or thousands of tiny files) Windows will try to scan each one as they're created. An easy fix to this is just to go into your system anti-virus settings and either disable real-time scanning or add your workspace to the exclusions list. On my machine this made my configuration time like 1/10th of what it took before.
+</details>
