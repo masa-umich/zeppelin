@@ -3,9 +3,11 @@ name: Build
 on:
   push:
     branches: [main]
-  pull_request:
   schedule:
     - cron: "0 0 * * *"
+  # Other branches are not built automatically. To test build one, run this
+  # workflow manually and pick the branch: Actions > Build > Run workflow, or
+  # `gh workflow run build.yaml --ref <branch>`.
   workflow_dispatch:
 
 permissions:
@@ -14,7 +16,7 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # Never cancel runs on main, so every merge gets its build (and release).
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   # Zephyr SDK toolchains needed by the apps below (space separated).
