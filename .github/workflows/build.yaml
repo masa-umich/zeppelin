@@ -6,65 +6,141 @@ on:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel runs on main, so every merge gets its build (and release).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Zephyr SDK toolchains needed by the apps below (space separated).
+  # arm-zephyr-eabi: STM32 boards, xtensa-espressif_esp32_zephyr-elf: ESP32 boards
+  SDK_TOOLCHAINS: arm-zephyr-eabi xtensa-espressif_esp32_zephyr-elf
 
 jobs:
   build:
-    name: Test build kestrel-app
+    name: Build ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    # Same container as the simulation (see sim/justfile). It has all of the
+    # Zephyr host tools but no Zephyr SDK, so only the toolchains listed in
+    # SDK_TOOLCHAINS are installed on top.
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-base:main
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-14, windows-2025]
-    runs-on: ${{ matrix.os }}
-    # Pass authentication tokens to all steps in the job - this increases the request rate limit
+        # Add an app's directory name here to build (and release) it.
+        # Each app is built for the default BOARD set in its CMakeLists.txt.
+        app:
+          - kestrel-app
+          - osprey-app
+    defaults:
+      run:
+        shell: bash
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+      # The workspace is owned by a different user than the container's root.
+      GIT_CONFIG_COUNT: 1
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: "*"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           path: zeppelin
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
 
-      - name: Configure Git
-        shell: bash
+      - name: Initialize west workspace
         run: |
-          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          west init -l zeppelin
+          west update -o=--depth=1 -n
+          echo "ZEPHYR_SDK_INSTALL_DIR=$GITHUB_WORKSPACE/zephyr-sdk" >> "$GITHUB_ENV"
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Cache Zephyr SDK
+        id: cache-sdk
+        uses: actions/cache@v6
         with:
-          python-version: 3.12
+          path: zephyr-sdk
+          key: zephyr-sdk-${{ hashFiles('zephyr/SDK_VERSION') }}-${{ env.SDK_TOOLCHAINS }}
 
-      - name: Initialize Zeppelin Workspace
-        uses: zephyrproject-rtos/action-zephyr-setup@v1
+      - name: Install Zephyr SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        working-directory: zeppelin
+        # The token only raises the GitHub API rate limit for the SDK lookup.
+        run: |
+          west sdk install \
+            --install-dir "$ZEPHYR_SDK_INSTALL_DIR" \
+            --toolchains $SDK_TOOLCHAINS \
+            --no-hosttools \
+            --personal-access-token "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Fetch binary blobs
+        working-directory: zeppelin
+        run: west blobs fetch hal_espressif
+
+      - name: Build ${{ matrix.app }}
+        working-directory: zeppelin
+        run: west build "${{ matrix.app }}" --pristine --build-dir "${{ matrix.app }}/build"
+
+      - name: Collect firmware
+        working-directory: zeppelin
+        run: |
+          mkdir firmware
+          for ext in bin hex elf; do
+            src="${{ matrix.app }}/build/zephyr/zephyr.$ext"
+            if [ -f "$src" ]; then
+              cp "$src" "firmware/${{ matrix.app }}.$ext"
+            fi
+          done
+          ls -l firmware
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v7
         with:
-          app-path: zeppelin
-          toolchains: arm-zephyr-eabi:riscv64-zephyr-elf:xtensa-espressif_esp32_zephyr-elf
-          ccache-cache-key: ${{ matrix.os }}
+          name: ${{ matrix.app }}
+          path: zeppelin/firmware/
+          if-no-files-found: error
 
-      - name: Setup Zeppelin
-        working-directory: zeppelin
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" != "Windows" ]; then
-            west sdk install --personal-access-token "$GITHUB_TOKEN"
-          fi
-          west zephyr-export
-          west blobs fetch hal_espressif
+  # Optional: publish a firmware release for each app when a PR is merged to
+  # main. Enable it by setting the repository variable AUTO_RELEASE to "true"
+  # (Settings > Secrets and variables > Actions > Variables).
+  release:
+    name: Publish firmware releases
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AUTO_RELEASE == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download firmware
+        uses: actions/download-artifact@v8
+        with:
+          path: firmware
 
-      - name: Build kestrel-app
-        working-directory: zeppelin
-        shell: bash
-        env:
-          ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+      # One release per app, tagged <app>-<year>.<month>.<day>-<short commit hash>
+      - name: Publish releases
         run: |
-          west build kestrel-app
+          suffix="$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}"
+          for dir in firmware/*/; do
+            app="$(basename "$dir")"
+            tag="$app-$suffix"
+            if gh release view "$tag" > /dev/null 2>&1; then
+              # Re-run of the same commit: just refresh the binaries.
+              gh release upload "$tag" "$dir"* --clobber
+              continue
+            fi
+            # Start the generated notes from this app's previous release.
+            previous="$(gh release list --limit 100 --json tagName \
+              --jq "[.[].tagName | select(startswith(\"$app-\"))][0] // empty")"
+            gh release create "$tag" "$dir"* \
+              --target "$GITHUB_SHA" \
+              --title "$app $suffix" \
+              --generate-notes \
+              ${previous:+--notes-start-tag "$previous"}
+          done
