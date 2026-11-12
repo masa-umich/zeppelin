@@ -1,0 +1,4 @@
+# Todo: write this
+
+CONFIG_CACHE_MANAGEMENT=y
+CONFIG_ADC=y

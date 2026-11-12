@@ -3,6 +3,13 @@
         {
             "name": "MASA Zephyr Firmware",
             "path": ".."
+        },
+        {
+            "name": "blinky",
+            "path": "blinky"
+        },
+        {
+            "path": "compute-board-bringup"
         }
     ],
     "settings": {

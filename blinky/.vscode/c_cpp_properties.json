@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "name": "Zephyr Workbench",
+      "compileCommands": [
+        "${workspaceFolder}/build/primary/compile_commands.json"
+      ]
+    }
+  ],
+  "version": 4
+}

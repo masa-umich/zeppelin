@@ -1,0 +1,16 @@
+{
+  "zephyr-workbench.build.configurations": [
+    {
+      "name": "primary",
+      "board": "compute_board",
+      "active": "true",
+      "default-runner": "stm32cubeprogrammer"
+    }
+  ],
+  "zephyr-workbench.westWorkspace": "${workspaceFolder}/../..",
+  "zephyr-workbench.toolchain": "zephyr",
+  "zephyr-workbench.sdk": "global",
+  "zephyr-workbench.intellisense.provider": "cpptools",
+  "cmake.configureOnOpen": false,
+  "cmake.enableAutomaticKitScan": false
+}
