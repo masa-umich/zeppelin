@@ -29,8 +29,6 @@ int main(void)
 
 	print_uart("Zephyr UART Polling Echo Ready. Type something:\r\n");
 
-	
-
     while (true) {
         /* uart_poll_in() returns 0 when a byte is read, or -1 if empty */
         if (uart_poll_in(uart_dev, &rx_char) == 0) {
