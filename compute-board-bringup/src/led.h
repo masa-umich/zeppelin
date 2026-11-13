@@ -3,6 +3,6 @@
 
 #include <zephyr/drivers/pwm.h>
 
-int led_set_brightness(const struct pwm_dt_spec *led, unsigned int percent);
+int led_set_brightness(const struct pwm_dt_spec* led, unsigned int percent);
 
 #endif

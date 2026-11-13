@@ -75,4 +75,4 @@ check:
 [windows]
 format:
     git add .
-    git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c" | ForEach-Object { uv run clang-format -i -style=file -- $_ }; exit 0
+    $files = @(git ls-files "*.cpp" "*.h" "*.hpp" "*.cc" "*.c"); if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; if ($files.Count -gt 0) { uv run python -c "from clang_format import clang_format; clang_format()" -i -style=file -- @files; exit $LASTEXITCODE }
