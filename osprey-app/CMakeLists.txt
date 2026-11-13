@@ -5,6 +5,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(BOARD nucleo_h723zg) # default board
 set(UA_LOGLEVEL 400 CACHE STRING "open62541 minimum log level (400=WARNING)") # supress some of build log
 
+# Pull in the sibling helium-lib as an out-of-tree Zephyr module
+list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/../helium-lib)
+
 include(FetchContent) # Populate sources before Zephyr discovers modules and their Kconfig options.
 FetchContent_Declare(open62541
     URL https://codeload.github.com/open62541/open62541/tar.gz/47e704dcecf2505da263b02ebaaaf1d91ec6aae0

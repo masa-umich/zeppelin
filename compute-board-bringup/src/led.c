@@ -2,8 +2,7 @@
 
 #include <stdint.h>
 
-int led_set_brightness(const struct pwm_dt_spec *led, unsigned int percent)
-{
+int led_set_brightness(const struct pwm_dt_spec* led, unsigned int percent) {
     if (percent > 100U) {
         return 0;
     }

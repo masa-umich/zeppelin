@@ -1,9 +1,6 @@
+#if defined(CONFIG_NET_CONNECTION_MANAGER)
+
 #include <helium/net_init.h>
-
-#if !defined(CONFIG_NET_CONNECTION_MANAGER)
-#error "CONFIG_NET_CONNECTION_MANAGER must be enabled for net_init to work"
-#endif
-
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
@@ -78,3 +75,5 @@ int net_init(int timeout) {
     }
     return 0;
 }
+
+#endif /* CONFIG_NET_CONNECTION_MANAGER */
