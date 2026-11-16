@@ -16,4 +16,4 @@ If:
   PathMatch: helium-lib/.*
 CompileFlags:
   # The shared Zephyr library is compiled as part of Kestrel.
-  CompilationDatabase: kestrel-app/build
+  CompilationDatabase: osprey-app/build
